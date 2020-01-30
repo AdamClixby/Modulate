@@ -125,7 +125,7 @@ public:
     void SetFileHash( int liFileNum, int liHash )           {   maFiles[ liFileNum ].miHash     = liHash;     }
     void SetFileSize( int liFileNum, int liSize )           {   maFiles[ liFileNum ].miSize     = liSize;     }
 
-    int GetFileArkIndex( int liFileNum, long& llOffsetInArk ) const;
+    int GetFileArkIndex( int liFileNum, unsigned long& llOffsetInArk ) const;
 
     int GetNumArks() const  { return miNumArks; }
     int GetNumFiles() const { return miNumFiles; }
@@ -199,6 +199,9 @@ private:
 
     const CEncryptedHeader* mpReferenceHeader = nullptr;
     CHeaderData mData;
+    unsigned char* mpArkData = nullptr;
+
+    unsigned int muArkDataSize = 0;
 
     int miInitialKey;
     int miCurrentKey;

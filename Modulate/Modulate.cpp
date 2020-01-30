@@ -100,25 +100,36 @@ int main( int argc, char *argv[], char *envp[] )
         return -1;
     }
 
-    CEncryptedHeader lHeader;
-    lHeader.Load( lpHeaderData, liHeaderSize );
-
     for( int argi = 2; argi < argc; ++argi )
     {
-        if( _stricmp( argv[ argi ], "loadsave" ) == 0 )
+        if( !_stricmp( argv[ argc ], "moggdetails" ) )
         {
+
+        }
+        else if( _stricmp( argv[ argi ], "loadsave" ) == 0 )
+        {
+            CEncryptedHeader lHeader;
+            lHeader.Load( lpHeaderData, liHeaderSize );
             lHeader.Save( 1739967672, -967906000 );
         }
         else if( _stricmp( argv[ argi ], "decrypt" ) == 0 )
         {
+            CEncryptedHeader lHeader;
+            lHeader.Load( lpHeaderData, liHeaderSize );
             lHeader.Save( 1739967672, -967906000, false );
         }
-        else if( _stricmp( argv[ argi ], "unpack" ) == 0 )
+        else if( _stricmp( argv[ argi ], "unpack" ) == 0 ||
+                 _stricmp( argv[ argi ], "extract" ) == 0 )
         {
+            CEncryptedHeader lHeader;
+            lHeader.Load( lpHeaderData, liHeaderSize );
             lHeader.ExtractFiles();
         }
-        else if( _stricmp( argv[ argi ], "newpack" ) == 0 )
+        else if( _stricmp( argv[ argi ], "pack" ) == 0 )
         {
+            CEncryptedHeader lHeader;
+            lHeader.Load( lpHeaderData, liHeaderSize );
+
             CEncryptedHeader lModifiedHeader;
             lModifiedHeader.SetReference( &lHeader );
 
