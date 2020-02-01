@@ -3,41 +3,7 @@
 #include <list>
 #include <string>
 #include <vector>
-
-static char gpScratch[ 1024 * 1024 ];
-
-template <typename T>
-static T ReadFromStream( const unsigned char*& lpStream )
-{
-    T lpResult = *(T*)lpStream;
-    lpStream += sizeof( T );
-    return lpResult;
-}
-
-template <typename T>
-static void WriteToStream( unsigned char*& lpStream, const T& lValue )
-{
-    *(T*)lpStream = lValue;
-    lpStream += sizeof( T );
-}
-
-static int WriteToStream( unsigned char*& lpStream, const std::string& lString )
-{
-    int liLength = (int)lString.length();
-    WriteToStream( lpStream, liLength );
-    memcpy( lpStream, lString.c_str(), liLength );
-    lpStream += liLength;
-
-    return liLength;
-}
-
-static void ReadStringToScratch( const unsigned char*& lpStream )
-{
-    int liFilenameLength = ReadFromStream< int >( lpStream );
-    memcpy( gpScratch, lpStream, liFilenameLength );
-    gpScratch[ liFilenameLength ] = 0;
-    lpStream += liFilenameLength;
-}
+#include "Utils.h"
 
 class CHeaderData
 {
@@ -51,7 +17,7 @@ public:
     struct sArkDef
     {
         std::string mPath;
-        int miSize = 0;
+        unsigned int muSize = 0;
         int miHash = 0;
         std::list< std::string > mStrings;
     };
@@ -82,11 +48,15 @@ public:
     }
 
     void SetArkDef( int liArkNum, const sArkDef& lDef )     {   maArks[ liArkNum ] = lDef; }
-    void SetArkSize( int liArkNum, int liArkSize )          {   maArks[ liArkNum ].miSize = liArkSize;  }
+    void SetArkSize( int liArkNum, int liArkSize )          {   maArks[ liArkNum ].muSize = liArkSize;  }
     void SetArkPath( int liArkNum, const char* lpPath )     {   maArks[ liArkNum ].mPath  = lpPath;     }
     void SetArkHash( int liArkNum, int liHash )             {   maArks[ liArkNum ].miHash = liHash;     }
     void AddArkString( int liArkNum, const char* lpString ) {   maArks[ liArkNum ].mStrings.push_back( std::string( lpString ) ); }
 
+    void ReduceFileCount()
+    {
+        miNumFiles--;
+    }
     void SetNumFiles( int liNum )
     {
         delete[] maFiles;
@@ -125,7 +95,7 @@ public:
     void SetFileHash( int liFileNum, int liHash )           {   maFiles[ liFileNum ].miHash     = liHash;     }
     void SetFileSize( int liFileNum, int liSize )           {   maFiles[ liFileNum ].miSize     = liSize;     }
 
-    int GetFileArkIndex( int liFileNum, unsigned long& llOffsetInArk ) const;
+    int GetFileArkIndex( int liFileNum, unsigned int& llOffsetInArk ) const;
 
     int GetNumArks() const  { return miNumArks; }
     int GetNumFiles() const { return miNumFiles; }
@@ -186,22 +156,20 @@ public:
 
     void Construct( const char* lpInPath );
 
-    void ExtractFiles();
+    void ExtractFiles( const char* lpOutPath );
 
     void Cycle( unsigned char* lpInStream, unsigned int liStreamSize );
 
+    static int GenerateFileList( const char* lpDirectory, char*& lpScratchPtr, unsigned int* lpOutTotalFileSize );
+
 private:
-    void ExtractFile( int liIndex );
+    void ExtractFile( int liIndex, const char* lpOutPath );
     int CycleKey( int liKey ) const;
     void UpdateKey();
-
-    int GenerateFileList( const char* lpDirectory, char*& lpScratchPtr, unsigned int& lOutTotalFileSize );
 
     const CEncryptedHeader* mpReferenceHeader = nullptr;
     CHeaderData mData;
     unsigned char* mpArkData = nullptr;
-
-    unsigned int muArkDataSize = 0;
 
     int miInitialKey;
     int miCurrentKey;

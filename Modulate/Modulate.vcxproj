@@ -151,10 +151,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CAmpConfig.h" />
     <ClInclude Include="CEncryptedHeader.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CAmpConfig.cpp" />
     <ClCompile Include="CEncryptedHeader.cpp" />
     <ClCompile Include="Modulate.cpp" />
     <ClCompile Include="pch.cpp">
