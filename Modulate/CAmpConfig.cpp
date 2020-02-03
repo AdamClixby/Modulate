@@ -7,6 +7,14 @@
 #include <direct.h>
 #include <windows.h>
 
+const int kiInt = 0;
+const int kiType = 1;
+const int kiString = 5;
+const int kiEntryComplete = 16;
+const int kiInputBinding = 17;
+const int kiPath = 18;
+const int kiFileRef = 33;
+
 CAmpConfig::CAmpConfig()
 {
 }
@@ -14,6 +22,94 @@ CAmpConfig::CAmpConfig()
 
 CAmpConfig::~CAmpConfig()
 {
+}
+
+void CAmpConfig::ReadUnlockDescription( const unsigned char*& lpStream, int liMaxToRead )
+{
+    const unsigned char* lpInitialStream = lpStream;
+    do {
+        int liVal = ReadFromStream< int >( lpStream );
+        switch( liVal )
+        {
+        case kiInt:
+        case 9:
+            std::cout << "Int " << ReadFromStream< int >( lpStream ) << "\t";
+            break;
+
+        case 1:
+//            std::cout << "Int " << ReadFromStream< int >( lpStream ) << "\n";
+            std::cout << "Byte " << (int)ReadFromStream< unsigned char >( lpStream ) << "\t";
+            std::cout << "Byte " << (int)ReadFromStream< unsigned char >( lpStream ) << "\t";
+            std::cout << "Byte " << (int)ReadFromStream< unsigned char >( lpStream ) << "\t";
+            std::cout << "Byte " << (int)ReadFromStream< unsigned char >( lpStream ) << "\t";
+            break;
+
+        case kiFileRef:
+            std::cout << "File - " << ReadStringToScratch( lpStream ) << "\n";
+            break;
+        case 35:
+            std::cout << "35 - " << ReadStringToScratch( lpStream ) << "\n";
+            break;
+        case kiString:
+            std::cout << "String - " << ReadStringToScratch( lpStream ) << "\n";
+            break;
+        case kiPath:
+            std::cout << "Path - " << ReadStringToScratch( lpStream ) << "\n";
+            break;
+
+        case kiEntryComplete:
+        case kiInputBinding:
+            std::cout << "\n";
+            return;
+
+        default:
+            break;
+        }
+    } while( lpStream - lpInitialStream < liMaxToRead );
+}
+
+CAmpConfig::sUnlock CAmpConfig::ReadUnlock( const unsigned char*& lpStream, int liMaxToRead )
+{
+    const unsigned char* lpInitialStream = lpStream;
+
+    sUnlock lUnlock;
+
+    do
+    {
+        int liVal = ReadFromStream< int >( lpStream );
+        switch( liVal )
+        {
+        case kiType:
+        {
+            short liType = ReadFromStream< short >( lpStream );
+            std::cout << "Type is " << liType << ":\t";
+
+            short liEntryNum = ReadFromStream< short >( lpStream );
+            std::cout << "Entry " << liEntryNum << "\n";
+
+            switch( liType )
+            {
+            default:
+                ReadUnlockDescription( lpStream, (int)(liMaxToRead - ( lpStream - lpInitialStream ) ) );
+                break;
+            }
+            break;
+        }
+
+        case kiString:
+        case kiPath:
+            std::cout << ReadStringToScratch( lpStream ) << "\t";
+            break;
+
+        case kiEntryComplete:
+            return lUnlock;
+
+        default:
+            break;
+        }
+    } while( lpStream - lpInitialStream < liMaxToRead );
+
+    return lUnlock;
 }
 
 void CAmpConfig::Load( const char* lpPath )
@@ -39,77 +135,9 @@ void CAmpConfig::Load( const char* lpPath )
 
     unsigned char* lpCSVPtr = lpCSVData;
     const unsigned char* lpStream = lpFileContents;
-    lpStream += 12181;
+    lpStream++;
 
-    while( lpStream )
-    {
-        std::cout << "\n";
-
-        int liVal1 = IntToCSV( lpStream, lpCSVPtr );                // 1
-        short liVal2 = ShortToCSV( lpStream, lpCSVPtr );            // 6
-        short liVal3 = ShortToCSV( lpStream, lpCSVPtr );
-        int liVal4 = IntToCSV( lpStream, lpCSVPtr );                // 5
-
-        if( liVal4 == 0 )
-        {
-            while( ReadFromStream< int >( lpStream ) != 15 ) {}
-            continue;
-        }
-        const char* lpString1 = StringToCSV( lpStream, lpCSVPtr );  // Name
-
-        if( liVal3 == 10 )
-        {
-            ReadFromStream< int >( lpStream );
-            StringToCSV( lpStream, lpCSVPtr );
-        }
-
-        int liVal5 = IntToCSV( lpStream, lpCSVPtr );
-        while( liVal5 == 5 ||
-            liVal5 == 18 ||
-            liVal5 == 35 )
-        {
-            StringToCSV( lpStream, lpCSVPtr );
-            liVal5 = ReadFromStream< int >( lpStream );
-        }
-
-        if( liVal5 == 9 )
-        {
-            IntToCSV( lpStream, lpCSVPtr );
-            liVal5 = ReadFromStream< int >( lpStream );
-        }
-
-        while( liVal5 == 0 )
-        {
-            while( liVal5 != 5 )
-            {
-                liVal5 = IntToCSV( lpStream, lpCSVPtr );
-            }
-
-            while( liVal5 == 5 )
-            {
-                StringToCSV( lpStream, lpCSVPtr );
-                liVal5 = ReadFromStream< int >( lpStream );
-            }
-        }
-
-        if( liVal5 == 1 ||
-            liVal5 == 16 ||
-            liVal5 == 17 )
-        {
-            continue;
-        }
-
-        IntToCSV( lpStream, lpCSVPtr );     // 5
-        StringToCSV( lpStream, lpCSVPtr );  // String table entry for name
-        IntToCSV( lpStream, lpCSVPtr );     // 5
-        StringToCSV( lpStream, lpCSVPtr );  // Unlock type
-        IntToCSV( lpStream, lpCSVPtr );     // 5
-        StringToCSV( lpStream, lpCSVPtr );  // Unlock desc
-        IntToCSV( lpStream, lpCSVPtr );     // 18
-        StringToCSV( lpStream, lpCSVPtr );  // Image
-        IntToCSV( lpStream, lpCSVPtr );     // 5
-        StringToCSV( lpStream, lpCSVPtr );  // VO
-    }
-
+    ReadUnlock( lpStream, (int)(liFileSize - ( lpStream - lpFileContents ) ) );
+    
     delete[] lpFileContents;
 }

@@ -29,9 +29,10 @@ public:
     {
         std::string mName;
         size_t mNameHash = 0;
+        size_t mExtensionHash = 0;
         int64_t mu64Offset = 0;
-        int miFlags1 = 0;
-        int miFlags2 = 0;
+        int miFlags1 = -1;
+        int miFlags2 = -1;
         int miHash = 0;
         int miSize = 0;
         std::vector< std::string > mPathBreakdown;
@@ -71,6 +72,16 @@ public:
         lFileDef.mName = lpName;
         std::string lName = lpName;
         lFileDef.mNameHash = std::hash< std::string >{}( lName );
+        
+        const char* lpExtension = lpName + strlen( lpName );
+        while( lpExtension > lpName && *lpExtension != '.' )
+        {
+            --lpExtension;
+        }
+        if( lpExtension != lpName )
+        {
+            lFileDef.mExtensionHash = std::hash< std::string >{}( std::string( lpExtension ) );
+        }
 
         int liNameLength = (int)strlen( lpName );
         char* lpNameCopy = new char[ liNameLength + 1 ];
@@ -92,7 +103,7 @@ public:
     }
     void SetFileFlags1( int liFileNum, int liFlags )        {   maFiles[ liFileNum ].miFlags1   = liFlags;    }
     void SetFileFlags2( int liFileNum, int liFlags )        {   maFiles[ liFileNum ].miFlags2   = liFlags;    }
-    void SetFileHash( int liFileNum, int liHash )           {   maFiles[ liFileNum ].miHash     = liHash;     }
+    void SetFileHash( int liFileNum, int liHash )           {   maFiles[ liFileNum ].miHash     = 0;          }  //liHash;     }
     void SetFileSize( int liFileNum, int liSize )           {   maFiles[ liFileNum ].miSize     = liSize;     }
 
     int GetFileArkIndex( int liFileNum, unsigned int& llOffsetInArk ) const;
@@ -139,7 +150,10 @@ public:
         return nullptr;
     }
 
+    const sFileDef* GetFileWithExtension( const char* lpExtension ) const;
+
     void SortFileList();
+    void SortFileFlags2( int liFirst, int liLast );
 };
 
 class CEncryptedHeader

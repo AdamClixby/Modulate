@@ -69,15 +69,8 @@ unsigned char* GetDecryptedHeaderData( const char* lpFilename )
 
 void ExtractConfig( const char* lpFilePath, const char* lpOutputFile )
 {
-    std::string lFilePath = lpFilePath;
-    if( lpFilePath[ strlen( lpFilePath ) - 1 ] != '/' )
-    {
-        lFilePath.append( "/" );
-    }
-    lFilePath.append( "amp_config.dta_dta_ps3" );
-
     CAmpConfig lConfig;
-    lConfig.Load( lFilePath.c_str() );
+    lConfig.Load( lpFilePath );
 }
 
 void ExtractStrings( const char* lpFilePath, const char* lpOutputFile )
@@ -188,20 +181,20 @@ void EncodeStrings( const char* lpStringsFile, const char* lpOutputFilename )
     int liNumStrings = 0;
     while( lpCSVPtr - lpCSVData < liFileSize )
     {
-        IntFromCSV( lpCSVPtr, lpOutputData );
-        IntFromCSV( lpCSVPtr, lpOutputData );
-        ShortFromCSV( lpCSVPtr, lpOutputData );
-        ShortFromCSV( lpCSVPtr, lpOutputData );
-        IntFromCSV( lpCSVPtr, lpOutputData );
+        IntFromCSV( lpCSVPtr, lpOutputPtr );
+        IntFromCSV( lpCSVPtr, lpOutputPtr );
+        ShortFromCSV( lpCSVPtr, lpOutputPtr );
+        ShortFromCSV( lpCSVPtr, lpOutputPtr );
+        IntFromCSV( lpCSVPtr, lpOutputPtr );
 
         const char* lpKey = lpCSVPtr;
-        StringFromCSV( lpCSVPtr, lpOutputData );
+        StringFromCSV( lpCSVPtr, lpOutputPtr );
         std::cout << lpKey << " :: ";
         
-        IntFromCSV( lpCSVPtr, lpOutputData );
+        IntFromCSV( lpCSVPtr, lpOutputPtr );
 
         const char* lpTranslation = lpCSVPtr;
-        StringFromCSV( lpCSVPtr, lpOutputData );
+        StringFromCSV( lpCSVPtr, lpOutputPtr );
         std::cout << lpTranslation << "\n";
 
         ++liNumStrings;
@@ -283,15 +276,15 @@ int main( int argc, char *argv[], char *envp[] )
     {
         if( _stricmp( argv[ argi ], "extractconfig" ) == 0 )
         {
-            ExtractConfig( "out/ps3/config", "config.txt" );
+            ExtractConfig( "out/ps3/config/amplitude.dta_dta_ps3", "config.txt" );
         }
-        if( _stricmp( argv[ argi ], "extractstrings" ) == 0 )
+        else if( _stricmp( argv[ argi ], "extractstrings" ) == 0 )
         {
             ExtractStrings( "out/ps3/ui/locale/eng", "strings.txt" );
         }
         else if( _stricmp( argv[ argi ], "encodestrings" ) == 0 )
         {
-            EncodeStrings( "strings.txt", "out/ps3/ui/locale/eng/locale_keep.dta_dta_ps3_2" );
+            EncodeStrings( "strings.txt", "out/ps3/ui/locale/eng/locale_keep.dta_dta_ps3" );
         }
         else if( _stricmp( argv[ argi ], "compilemoggs" ) == 0 )
         {

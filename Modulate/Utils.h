@@ -32,12 +32,13 @@ static int WriteToStream( unsigned char*& lpStream, const std::string& lString )
     return liLength;
 }
 
-static void ReadStringToScratch( const unsigned char*& lpStream )
+static const char* ReadStringToScratch( const unsigned char*& lpStream )
 {
     int liFilenameLength = ReadFromStream< int >( lpStream );
     memcpy( gpScratch, lpStream, liFilenameLength );
     gpScratch[ liFilenameLength ] = 0;
     lpStream += liFilenameLength;
+    return gpScratch;
 }
 
 static int IntToCSV( const unsigned char*& lpStream, unsigned char*& lpCSV )
@@ -81,7 +82,7 @@ static const char* StringToCSV( const unsigned char*& lpStream, unsigned char*& 
     return gpScratch;
 };
 
-static void IntFromCSV( char*& lpCSV, char* lpOutput )
+static void IntFromCSV( char*& lpCSV, char*& lpOutput )
 {
     char* lpTab = strstr( lpCSV, "\t" );
     *lpTab = 0;
@@ -94,7 +95,7 @@ static void IntFromCSV( char*& lpCSV, char* lpOutput )
     lpCSV = lpTab + 1;
 }
 
-static void ShortFromCSV( char*& lpCSV, char* lpOutput )
+static void ShortFromCSV( char*& lpCSV, char*& lpOutput )
 {
     char* lpTab = strstr( lpCSV, "\t" );
     *lpTab = 0;
@@ -107,7 +108,7 @@ static void ShortFromCSV( char*& lpCSV, char* lpOutput )
     lpCSV = lpTab + 1;
 };
 
-static void StringFromCSV( char*& lpCSV, char* lpOutput )
+static void StringFromCSV( char*& lpCSV, char*& lpOutput )
 {
     char* lpTab = strstr( lpCSV, "\t" );
     *lpTab = 0;
