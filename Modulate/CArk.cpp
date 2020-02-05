@@ -645,7 +645,7 @@ void CArk::sFileDefinition::Serialise( unsigned char *& lpData ) const
     WriteString( mName );
     WriteInt( miFlags1 );
     WriteUInt( miSize );
-    WriteUInt( miHash );
+    WriteUInt( 0 );      // Don't need to save hashes
 }
 
 eError CArk::LoadArkData()

@@ -371,50 +371,6 @@ eError Pack( const char* )
     lArkHeader.BuildArk( CSettings::mInputDirectory.c_str() );
     lArkHeader.SaveArk( CSettings::mOutputDirectory.c_str(), CSettings::mpOutputFilename );
 
-
-
-
-
-
-    const unsigned int kuUnencryptedVersion = 9;
-    FILE* lHeaderFile = nullptr;
-    fopen_s( &lHeaderFile, CSettings::mpInputFilename, "rb" );
-    if( !lHeaderFile )
-    {
-        std::cout << "Unable to open header file: " << CSettings::mpInputFilename << "\n";
-        return eError_NoError;
-    }
-
-    fseek( lHeaderFile, 0, SEEK_END );
-    int liHeaderSize = ftell( lHeaderFile );
-    unsigned char* lpHeaderData = new unsigned char[ liHeaderSize ];
-
-    fseek( lHeaderFile, 0, SEEK_SET );
-    fread( lpHeaderData, liHeaderSize, 1, lHeaderFile );
-    fclose( lHeaderFile );
-
-    unsigned int luVersion = *(unsigned int*)( lpHeaderData );
-    const unsigned int kuEncryptedVersion = 0xc64eed30;
-    if( luVersion != kuEncryptedVersion )
-    {
-        std::cout << "ERROR: Unknown version " << luVersion << "\n";
-        return eError_NoError;
-    }
-
-    CEncryptedHeader lHeader;
-    lHeader.Load( lpHeaderData, liHeaderSize );
-    lHeader.Cycle( lpHeaderData, liHeaderSize );
-
-    CEncryptedHeader lModifiedHeader;
-    lModifiedHeader.SetReference( &lHeader );
-
-    lModifiedHeader.Construct( "unpacked" );
-    lModifiedHeader.Save( 1739967672, -967906000, false );
-
-
-
-
-
     return eError_NoError;
 }
 
