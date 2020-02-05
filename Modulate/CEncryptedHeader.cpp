@@ -322,60 +322,60 @@ unsigned int CEncryptedHeader::Load( unsigned char* lpInStream, unsigned int liS
     //}
 
     //std::cout << "\n\n\n";
-/*
-    int liNumOutput = 0;
-    int liPreviousLowestFlags = -10000;
-    for( ; liNumOutput < liNumFileFlags; )
-    {
-        int liLowestFlags = INT_MAX;
-        for( int jj = 0; jj < liNumFileFlags; ++jj )
-        {
-            const CHeaderData::sFileDef* lpFileDef = mData.GetFile( jj );
-            if( lpFileDef->miFlags1 < liLowestFlags &&
-                lpFileDef->miFlags1 > liPreviousLowestFlags )
-            {
-                liLowestFlags = lpFileDef->miFlags1;
-            }
-        }
-        for( int jj = 0; jj < liNumFileFlags; ++jj )
-        {
-            const CHeaderData::sFileDef* lpFileDef = mData.GetFile( jj );
-            if( lpFileDef->miFlags1 == liLowestFlags )
-            {
-                ++liNumOutput;
-                std::cout << jj << ":\t"  << lpFileDef->miFlags1 << "\t" << lpFileDef->miFlags2 << "\t" << lpFileDef->mName.c_str() << "\n";
-            }
-        }
-        liPreviousLowestFlags = liLowestFlags;
-    }
 
-    std::cout << "\n\n\n";
+    ////int liNumOutput = 0;
+    ////int liPreviousLowestFlags = -10000;
+    //for( ; liNumOutput < liNumFileFlags; )
+    //{
+    //    int liLowestFlags = INT_MAX;
+    //    for( int jj = 0; jj < liNumFileFlags; ++jj )
+    //    {
+    //        const CHeaderData::sFileDef* lpFileDef = mData.GetFile( jj );
+    //        if( lpFileDef->miFlags1 < liLowestFlags &&
+    //            lpFileDef->miFlags1 > liPreviousLowestFlags )
+    //        {
+    //            liLowestFlags = lpFileDef->miFlags1;
+    //        }
+    //    }
+    //    for( int jj = 0; jj < liNumFileFlags; ++jj )
+    //    {
+    //        const CHeaderData::sFileDef* lpFileDef = mData.GetFile( jj );
+    //        if( lpFileDef->miFlags1 == liLowestFlags )
+    //        {
+    //            ++liNumOutput;
+    //            std::cout << jj << ":\t"  << lpFileDef->miFlags1 << "\t" << lpFileDef->miFlags2 << "\t" << lpFileDef->mName.c_str() << "\n";
+    //        }
+    //    }
+    //    liPreviousLowestFlags = liLowestFlags;
+    //}
 
-    liNumOutput = 0;
-    liPreviousLowestFlags = -10000;
-    for( ; liNumOutput < liNumFileFlags; )
-    {
-        int liLowestFlags = INT_MAX;
-        for( int jj = 0; jj < liNumFileFlags; ++jj )
-        {
-            const CHeaderData::sFileDef* lpFileDef = mData.GetFile( jj );
-            if( lpFileDef->miFlags2 < liLowestFlags &&
-                lpFileDef->miFlags2 > liPreviousLowestFlags )
-            {
-                liLowestFlags = lpFileDef->miFlags2;
-            }
-        }
-        for( int jj = 0; jj < liNumFileFlags; ++jj )
-        {
-            const CHeaderData::sFileDef* lpFileDef = mData.GetFile( jj );
-            if( lpFileDef->miFlags2 == liLowestFlags )
-            {
-                ++liNumOutput;
-                std::cout << jj << ":\t" << lpFileDef->miFlags1 << "\t" << lpFileDef->miFlags2 << "\t" << lpFileDef->mName.c_str() << "\n";
-            }
-        }
-        liPreviousLowestFlags = liLowestFlags;
-    }*/
+    //std::cout << "\n\n\n";
+
+    //liNumOutput = 0;
+    //liPreviousLowestFlags = -10000;
+    //for( ; liNumOutput < liNumFileFlags; )
+    //{
+    //    int liLowestFlags = INT_MAX;
+    //    for( int jj = 0; jj < liNumFileFlags; ++jj )
+    //    {
+    //        const CHeaderData::sFileDef* lpFileDef = mData.GetFile( jj );
+    //        if( lpFileDef->miFlags2 < liLowestFlags &&
+    //            lpFileDef->miFlags2 > liPreviousLowestFlags )
+    //        {
+    //            liLowestFlags = lpFileDef->miFlags2;
+    //        }
+    //    }
+    //    for( int jj = 0; jj < liNumFileFlags; ++jj )
+    //    {
+    //        const CHeaderData::sFileDef* lpFileDef = mData.GetFile( jj );
+    //        if( lpFileDef->miFlags2 == liLowestFlags )
+    //        {
+    //            ++liNumOutput;
+    //            std::cout << jj << ":\t" << lpFileDef->miFlags1 << "\t" << lpFileDef->miFlags2 << "\t" << lpFileDef->mName.c_str() << "\n";
+    //        }
+    //    }
+    //    liPreviousLowestFlags = liLowestFlags;
+    //}
 
     return liStreamSize;
 }
@@ -742,7 +742,9 @@ void CEncryptedHeader::Construct( const char* lpInPath )
             mData.SetFileHash( ii + liFileOffset, lpFileDef->miHash );
             mData.SetFileSize( ii + liFileOffset, lpFileDef->miSize );
 
-            if( strstr( lpFileDef->mName.c_str(), "/config/arkbuild/" ) )
+            if( strstr( lpFileDef->mName.c_str(), "/config/arkbuild/" ) ||
+                //strstr( lpFileDef->mName.c_str(), ".mid_ps3" ) ||
+                ( strstr( lpFileDef->mName.c_str(), ".moggsong" ) && !strstr( lpFileDef->mName.c_str(), ".moggsong_dta_ps3" ) ) )
             {
                 mData.SetFileSize( ii + liFileOffset, 0 );
             }
@@ -796,6 +798,11 @@ void CEncryptedHeader::Construct( const char* lpInPath )
             fseek( lFile, 0, SEEK_END );
             int liFileSize = ftell( lFile );
             fseek( lFile, 0, SEEK_SET );
+
+            if( lpFileDef->miSize == 0 )
+            {
+                liFileSize = 0;
+            }
 
             if( ( lpArkPtr - lpPreviousArkPtr ) + liFileSize > kuMaxArkSize )
             {
@@ -903,7 +910,7 @@ int CEncryptedHeader::GenerateFileList( const char* lpDirectory, char*& lpScratc
 
             ++liNumFiles;
 
-            std::string lSourceFilename = "out/";
+            std::string lSourceFilename = "unpacked/";
             lSourceFilename += lFilename.c_str();
 
             FILE* lFile = nullptr;

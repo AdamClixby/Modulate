@@ -113,19 +113,29 @@ public:
 
     int GetNumDuplicates( const char* lpNameList, int liNumNames ) const
     {
-        std::string lName = lpNameList;
-        size_t lNameHash = std::hash< std::string >{}( lName );
-        
         int liNum = 0;
-        for( int ii = 0; ii < miNumFiles; ++ii )
+        int liNumIgnored = 0;
+        for( int jj = 0; jj < liNumNames; ++jj )
         {
-            if( maFiles[ ii ].mNameHash == lNameHash )
+            std::string lName = lpNameList;
+            lpNameList += lName.length() + 1;
+            size_t lNameHash = std::hash< std::string >{}( lName );
+
+            int liPrevNum = liNum;
+            for( int ii = 0; ii < miNumFiles; ++ii )
             {
-                ++liNum;
+                if( maFiles[ ii ].mNameHash == lNameHash )
+                {
+                    ++liNum;
+                }
+            }
+            if( liNum == liPrevNum )
+            {
+                ++liNumIgnored;
             }
         }
 
-        return liNum - 1;
+        return liNum - liNumNames + liNumIgnored;
     }
     
     const sArkDef* GetArk( int liArkNum ) const    { return &maArks[ liArkNum ]; }

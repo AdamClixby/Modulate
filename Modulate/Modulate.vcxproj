@@ -152,13 +152,19 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="CAmpConfig.h" />
+    <ClInclude Include="CArk.h" />
     <ClInclude Include="CEncryptedHeader.h" />
+    <ClInclude Include="CEncryptionCycler.h" />
+    <ClInclude Include="Error.h" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Settings.h" />
     <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CAmpConfig.cpp" />
+    <ClCompile Include="CArk.cpp" />
     <ClCompile Include="CEncryptedHeader.cpp" />
+    <ClCompile Include="CEncryptionCycler.cpp" />
     <ClCompile Include="Modulate.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -166,6 +172,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="Settings.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -6,10 +6,15 @@
 #include <sys/types.h>
 #include <direct.h>
 #include <windows.h>
+#include <functional>
 
 #include "Utils.h"
 #include "CEncryptedHeader.h"
 #include "CAmpConfig.h"
+
+#include "Error.h"
+#include "Settings.h"
+#include "CArk.h"
 
 unsigned char* GetDecryptedHeaderData( const char* lpFilename )
 {
@@ -239,7 +244,258 @@ void CompileMoggs( const char* lpOutDir )
     }
 }
 
+eError EnableVerbose( const char* )
+{
+    CSettings::mbVerbose = true;
+
+    std::cout << "Verbose mode enabled\n";
+
+    return eError_NoError;
+}
+
+eError EnableForceWrite( const char* )
+{
+    CSettings::mbOverwriteOutputFiles = true;
+
+    VERBOSE_OUT( "Overwriting existing files when necessary\n" );
+
+    return eError_NoError;
+}
+
+eError SetInputFile( const char* lpInputFilename )
+{
+    bool lbValidFile = false;
+
+    VERBOSE_OUT( "Setting input file to " << lpInputFilename << "\n" );
+
+    FILE* lpInputFile = nullptr;
+    fopen_s( &lpInputFile, lpInputFilename, "rb" );
+    lbValidFile = ( lpInputFile != nullptr );
+    fclose( lpInputFile );
+
+    if( !lbValidFile )
+    {
+        return eError_FailedToOpenFile;
+    }
+
+    CSettings::mpInputFilename = lpInputFilename;
+
+    return eError_NoError;
+}
+
+eError SetOutputFile( const char* lpOutputFilename )
+{
+    VERBOSE_OUT( "Setting output file to " << lpOutputFilename << "\n" );
+
+    CSettings::mpOutputFilename = lpOutputFilename;
+
+    return eError_NoError;
+}
+
+eError SetInputDirectory( const char* lpInputDirectoryName )
+{
+    VERBOSE_OUT( "Setting input directory to " << lpInputDirectoryName << "\n" );
+
+    std::string lNewInputDirectory = lpInputDirectoryName;
+    if( lNewInputDirectory.back() == '/' )
+    {
+        CSettings::mInputDirectory = lNewInputDirectory;
+    }
+    else
+    {
+        CSettings::mInputDirectory = lNewInputDirectory + "/";
+    }
+    VERBOSE_OUT( "Input directory set to " << CSettings::mInputDirectory.c_str() << "\n" );
+
+    return eError_NoError;
+}
+
+eError SetOutputDirectory( const char* lpOutputDirectoryName )
+{
+    bool lbValidDir = false;
+
+    VERBOSE_OUT( "Setting output directory to " << lpOutputDirectoryName << "\n" );
+
+    std::string lNewOutputDirectory = lpOutputDirectoryName;
+    if( lNewOutputDirectory.back() == '/' )
+    {
+        lNewOutputDirectory = lNewOutputDirectory.substr( 0, lNewOutputDirectory.length() - 1 );
+    }
+
+    WIN32_FIND_DATAA lFindFileData;
+    HANDLE lFindFileHandle = FindFirstFileA( lNewOutputDirectory.c_str(), &lFindFileData );
+    if( ( lFindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) == 0 )
+    {
+        VERBOSE_OUT( "Directory does not exist, creating\n" );
+        _mkdir( lNewOutputDirectory.c_str() );
+    }
+    
+    lFindFileHandle = FindFirstFileA( lNewOutputDirectory.c_str(), &lFindFileData );
+    if( ( lFindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) == 0 )
+    {
+        return eError_FailedToCreateDirectory;
+    }
+
+    CSettings::mOutputDirectory = lNewOutputDirectory + "/";
+    VERBOSE_OUT( "Output directory set to " << CSettings::mOutputDirectory.c_str() << "\n" );
+
+    return eError_NoError;
+}
+
+eError Unpack( const char* )
+{
+    VERBOSE_OUT( "\nUnpacking\n" );
+
+    CArk lArkHeader;
+    eError leError = lArkHeader.Load( CSettings::mpInputFilename );
+    SHOW_ERROR_AND_RETURN;
+
+    leError = lArkHeader.ExtractFiles( 0, lArkHeader.GetNumFiles(), CSettings::mOutputDirectory.c_str() );
+    SHOW_ERROR_AND_RETURN;
+
+    return eError_NoError;
+}
+
+eError Pack( const char* )
+{
+    VERBOSE_OUT( "\nPacking\n" );
+
+    CArk lReferenceArkHeader;
+    eError leError = lReferenceArkHeader.Load( CSettings::mpInputFilename );
+    SHOW_ERROR_AND_RETURN;
+
+    CArk lArkHeader;
+    leError = lArkHeader.ConstructFromDirectory( CSettings::mInputDirectory.c_str(), lReferenceArkHeader );
+    SHOW_ERROR_AND_RETURN;
+
+    lArkHeader.BuildArk( CSettings::mInputDirectory.c_str() );
+    lArkHeader.SaveArk( CSettings::mOutputDirectory.c_str(), CSettings::mpOutputFilename );
+
+
+
+
+
+
+    const unsigned int kuUnencryptedVersion = 9;
+    FILE* lHeaderFile = nullptr;
+    fopen_s( &lHeaderFile, CSettings::mpInputFilename, "rb" );
+    if( !lHeaderFile )
+    {
+        std::cout << "Unable to open header file: " << CSettings::mpInputFilename << "\n";
+        return eError_NoError;
+    }
+
+    fseek( lHeaderFile, 0, SEEK_END );
+    int liHeaderSize = ftell( lHeaderFile );
+    unsigned char* lpHeaderData = new unsigned char[ liHeaderSize ];
+
+    fseek( lHeaderFile, 0, SEEK_SET );
+    fread( lpHeaderData, liHeaderSize, 1, lHeaderFile );
+    fclose( lHeaderFile );
+
+    unsigned int luVersion = *(unsigned int*)( lpHeaderData );
+    const unsigned int kuEncryptedVersion = 0xc64eed30;
+    if( luVersion != kuEncryptedVersion )
+    {
+        std::cout << "ERROR: Unknown version " << luVersion << "\n";
+        return eError_NoError;
+    }
+
+    CEncryptedHeader lHeader;
+    lHeader.Load( lpHeaderData, liHeaderSize );
+    lHeader.Cycle( lpHeaderData, liHeaderSize );
+
+    CEncryptedHeader lModifiedHeader;
+    lModifiedHeader.SetReference( &lHeader );
+
+    lModifiedHeader.Construct( "unpacked" );
+    lModifiedHeader.Save( 1739967672, -967906000, false );
+
+
+
+
+
+    return eError_NoError;
+}
+
+void PrintUsage()
+{
+    std::cout << "Usage: Modulate.exe <options> <command>\n\n";
+    std::cout << "Options:\n";
+    std::cout << "-verbose\t\tShow full information during operation\n";
+    std::cout << "-force\t\t\tOverwrite existing files\n";
+    std::cout << "-infile <filename>\tOpen the specified header file, rather than the default (" << CSettings::mpInputFilename << ")\n";
+    std::cout << "-outfile <filename>\tSave to the specified header file, rather than the default (" << CSettings::mpOutputFilename << ")\n";
+    std::cout << "-indir <pathname>\tRead data to pack from this path, rather than the working directory\n\n";
+    std::cout << "-outdir <pathname>\tStore saved files in this path, rather than the working directory\n\n";
+    std::cout << "Commands:\n";
+    std::cout << "-unpack\t\t\tUnpack the contents of the .ark file(s)\n";
+    std::cout << "-repack\t\t\tRepack data into an .ark file\n";
+}
+
 int main( int argc, char *argv[], char *envp[] )
+{
+    struct sCommandPair
+    {
+        const char* mpCommandName;
+        std::function<eError( const char* )> mFunction;
+        bool mbIsFinalCommand;
+    };
+    sCommandPair kaCommands[] = {
+        "-verbose", EnableVerbose,      false,
+        "-force",   EnableForceWrite,   false,
+        "-infile",  SetInputFile,       false,
+        "-outfile", SetOutputFile,      false,
+        "-indir",   SetInputDirectory,  false,
+        "-outdir",  SetOutputDirectory, false,
+        "unpack",   Unpack,             true,
+        "pack",     Pack,               true,
+        nullptr,    nullptr,            false
+    };
+
+    bool lbPerformedFinalCommand = false;
+
+    sCommandPair* lpCommand = kaCommands;
+    do
+    {
+        for( int ii = 0; ii < argc; ++ii )
+        {
+            if( _stricmp( argv[ ii ], lpCommand->mpCommandName ) == 0 )
+            {
+                if( lbPerformedFinalCommand && lpCommand->mbIsFinalCommand )
+                {
+                    continue;
+                }
+
+                lbPerformedFinalCommand |= lpCommand->mbIsFinalCommand;
+
+                const char* lpNextArg = ( ii < ( argc - 1 ) ) ? argv[ ii + 1 ] : "";
+                eError leError = lpCommand->mFunction( lpNextArg );
+                switch( leError )
+                {
+                case eError_NoError:
+                    break;
+                default:
+                    ShowError( leError );
+                    return -1;
+                }
+
+                break;
+            }
+        }
+
+        ++lpCommand;
+    } while( lpCommand->mpCommandName );
+
+    if( !lbPerformedFinalCommand )
+    {
+        PrintUsage();
+    }
+
+    return 0;
+}
+
+int main2( int argc, char *argv[], char *envp[] )
 {
     if( argc < 3 )
     {
