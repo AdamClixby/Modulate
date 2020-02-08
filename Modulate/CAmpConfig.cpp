@@ -87,13 +87,7 @@ CAmpConfig::sUnlock CAmpConfig::ReadUnlock( const unsigned char*& lpStream, int 
             short liEntryNum = ReadFromStream< short >( lpStream );
             std::cout << "Entry " << liEntryNum << "\n";
 
-            switch( liType )
-            {
-            default:
-                ReadUnlockDescription( lpStream, (int)(liMaxToRead - ( lpStream - lpInitialStream ) ) );
-                break;
-            }
-            break;
+            ReadUnlockDescription( lpStream, (int)( liMaxToRead - ( lpStream - lpInitialStream ) ) );
         }
 
         case kiString:

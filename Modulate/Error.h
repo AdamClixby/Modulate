@@ -11,6 +11,7 @@ enum eError {
     eError_AlreadyLoaded,
     eError_InvalidData,
     eError_NoData,
+    eError_FailedToCreateFile,
     eError_NumTypes
 };
 
@@ -25,6 +26,7 @@ static void ShowError( eError leError )
         "Already loaded",
         "Bad data",
         "Missing data",
+        "Failed to create file",
     };
 
     std::cout << "ERROR: " << lapErrorNames[ leError ] << "\n";

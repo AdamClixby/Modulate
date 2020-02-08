@@ -1,22 +1,22 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <LocalDebuggerCommandArguments>-infile main_ps3.hdr -force -verbose -outdir unpacked -indir unpacked pack</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-infile main_ps3.hdr -force -verbose buildsongs pack -indir packed -outdir "C:\Users\Adam\Desktop\Amp\RPCS3\dev_hdd0\game\NPUB31810\USRDIR"</LocalDebuggerCommandArguments>
     <LocalDebuggerWorkingDirectory>C:\Users\Adam\Desktop\Amp\Amplitude [NPUB31810]\NPUB31810\USRDIR</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <LocalDebuggerCommandArguments>-infile main_ps3.hdr -force -verbose -outdir unpacked -indir unpacked pack</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-infile main_ps3.hdr -force -verbose buildsongs pack -indir packed -outdir "C:\Users\Adam\Desktop\Amp\RPCS3\dev_hdd0\game\NPUB31810\USRDIR"</LocalDebuggerCommandArguments>
     <LocalDebuggerWorkingDirectory>C:\Users\Adam\Desktop\Amp\Amplitude [NPUB31810]\NPUB31810\USRDIR</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>-infile main_ps3.hdr -force -verbose -outdir unpacked -indir unpacked pack</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-infile main_ps3.hdr -force -verbose buildsongs pack -indir packed -outdir "C:\Users\Adam\Desktop\Amp\RPCS3\dev_hdd0\game\NPUB31810\USRDIR"</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerWorkingDirectory>C:\Users\Adam\Desktop\Amp\Amplitude [NPUB31810]\NPUB31810\USRDIR</LocalDebuggerWorkingDirectory>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerCommandArguments>-infile main_ps3.hdr -force -verbose -outdir unpacked -indir unpacked pack</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-infile main_ps3.hdr -force -verbose buildsongs pack -indir packed -outdir "C:\Users\Adam\Desktop\Amp\RPCS3\dev_hdd0\game\NPUB31810\USRDIR"</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerWorkingDirectory>C:\Users\Adam\Desktop\Amp\Amplitude [NPUB31810]\NPUB31810\USRDIR</LocalDebuggerWorkingDirectory>
   </PropertyGroup>

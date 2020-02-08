@@ -672,8 +672,6 @@ void CEncryptedHeader::Construct( const char* lpInPath )
                 continue;
             }
 
-            std::cout << "Adding file: " << lpNextPath << "\n";
-
             mData.SetFileName( ii + liFileOffset, lpNextPath );
             mData.SetFileFlags1( ii + liFileOffset, lpReferenceFile->miFlags1 );
             mData.SetFileFlags2( ii + liFileOffset, lpReferenceFile->miFlags2 );
@@ -690,54 +688,54 @@ void CEncryptedHeader::Construct( const char* lpInPath )
             mData.SetFileFlags1( ii + liFileOffset, lpFileDef->miFlags1 );
             mData.SetFileFlags2( ii + liFileOffset, lpFileDef->miFlags2 );
 
-            if( /*strstr( lpFileDef->mName.c_str(), "_split_ark_" ) ||
-                strstr( lpFileDef->mName.c_str(), "ps3/banks/ps3" ) ||
-                strstr( lpFileDef->mName.c_str(), "/config/amp_input." ) ||*/
-                //strstr( lpFileDef->mName.c_str(), "/config/amp_songs_config." ) ||
-                //strstr( lpFileDef->mName.c_str(), "/config/amplitude." ) ||
-                //strstr( lpFileDef->mName.c_str(), "/config/forge.") ||
-                //strstr( lpFileDef->mName.c_str(), "/config/arkbuild" ) ||
-                //strstr( lpFileDef->mName.c_str(), "/config/arkbuild" ) ||
-                //strstr( lpFileDef->mName.c_str(), "ps3/fusion/" ) ||
-                //strstr( lpFileDef->mName.c_str(), "ps3/mc/" ) ||
-                //strstr( lpFileDef->mName.c_str(), "ps3/shaders/" ) ||
-                //strstr( lpFileDef->mName.c_str(), "ps3/system/data/render" ) ||
-                //strstr( lpFileDef->mName.c_str(), "ps3/system/data/shared" ) ||
-                //( strstr( lpFileDef->mName.c_str(), "/allthetime." ) && ( !strstr( lpFileDef->mName.c_str(), "/allthetime.moggsong" ) || strstr( lpFileDef->mName.c_str(), "/allthetime.moggsong_dta_ps3" ) ) ) ||
-                //strstr( lpFileDef->mName.c_str(), "assault_on" ) ||
-                //strstr( lpFileDef->mName.c_str(), "/astrosight." ) ||
-                //strstr( lpFileDef->mName.c_str(), "/breakforme." ) ||
-                //strstr( lpFileDef->mName.c_str(), "/concept." ) ||
-                //strstr( lpFileDef->mName.c_str(), "/crazy_ride." ) ||
-                //strstr( lpFileDef->mName.c_str(), "/credits." ) ||
-                //strstr( lpFileDef->mName.c_str(), "/crystal." ) ||
-                //strstr( lpFileDef->mName.c_str(), "/dalatecht." ) ||
+            //if( /*strstr( lpFileDef->mName.c_str(), "_split_ark_" ) ||
+            //    strstr( lpFileDef->mName.c_str(), "ps3/banks/ps3" ) ||
+            //    strstr( lpFileDef->mName.c_str(), "/config/amp_input." ) ||*/
+            //    strstr( lpFileDef->mName.c_str(), "/config/amp_songs_config." ) ||
+            //    strstr( lpFileDef->mName.c_str(), "/config/amplitude." ) ||
+            //    strstr( lpFileDef->mName.c_str(), "/config/forge.") ||
+            //    strstr( lpFileDef->mName.c_str(), "/config/arkbuild" ) ||
+            //    strstr( lpFileDef->mName.c_str(), "/config/arkbuild" ) ||
+            //    strstr( lpFileDef->mName.c_str(), "ps3/fusion/" ) ||
+            //    strstr( lpFileDef->mName.c_str(), "ps3/mc/" ) ||
+            //    strstr( lpFileDef->mName.c_str(), "ps3/shaders/" ) ||
+            //    strstr( lpFileDef->mName.c_str(), "ps3/system/data/render" ) ||
+            //    strstr( lpFileDef->mName.c_str(), "ps3/system/data/shared" ) ||
+            //    ( strstr( lpFileDef->mName.c_str(), "/allthetime." ) && ( !strstr( lpFileDef->mName.c_str(), "/allthetime.moggsong" ) || strstr( lpFileDef->mName.c_str(), "/allthetime.moggsong_dta_ps3" ) ) ) ||
+            //    strstr( lpFileDef->mName.c_str(), "assault_on" ) ||
+            //    strstr( lpFileDef->mName.c_str(), "/astrosight." ) ||
+            //    strstr( lpFileDef->mName.c_str(), "/breakforme." ) ||
+            //    strstr( lpFileDef->mName.c_str(), "/concept." ) ||
+            //    strstr( lpFileDef->mName.c_str(), "/crazy_ride." ) ||
+            //    strstr( lpFileDef->mName.c_str(), "/credits." ) ||
+            //    strstr( lpFileDef->mName.c_str(), "/crystal." ) ||
+            //    strstr( lpFileDef->mName.c_str(), "/dalatecht." ) ||
 
-                //strstr( lpFileDef->mName.c_str(), "/perfectbrain." ) ||
-                ///*strstr( lpFileDef->mName.c_str(), "/wetware." ) ||*/
-                //strstr( lpFileDef->mName.c_str(), "/dreamer." ) ||
-                //strstr( lpFileDef->mName.c_str(), "/recession." ) ||
-                //strstr( lpFileDef->mName.c_str(), "/donot." ) ||
-                //strstr( lpFileDef->mName.c_str(), "/decodeme." ) ||
-                //strstr( lpFileDef->mName.c_str(), "/iseeyou." ) ||
-                //strstr( lpFileDef->mName.c_str(), "/humanlove." ) ||
-                /*( strstr( lpFileDef->mName.c_str(), "/magpie." ) && ( !strstr( lpFileDef->mName.c_str(), "/magpie.moggsong" )  || strstr( lpFileDef->mName.c_str(), "/magpie.moggsong_dta_ps3" ) ) )*/ 1 )
-            {
-                int liNewFlags = 0;
+            //    strstr( lpFileDef->mName.c_str(), "/perfectbrain." ) ||
+            //    /*strstr( lpFileDef->mName.c_str(), "/wetware." ) ||*/
+            //    strstr( lpFileDef->mName.c_str(), "/dreamer." ) ||
+            //    strstr( lpFileDef->mName.c_str(), "/recession." ) ||
+            //    strstr( lpFileDef->mName.c_str(), "/donot." ) ||
+            //    strstr( lpFileDef->mName.c_str(), "/decodeme." ) ||
+            //    strstr( lpFileDef->mName.c_str(), "/iseeyou." ) ||
+            //    strstr( lpFileDef->mName.c_str(), "/humanlove." ) ||
+            //    /*( strstr( lpFileDef->mName.c_str(), "/magpie." ) && ( !strstr( lpFileDef->mName.c_str(), "/magpie.moggsong" )  || strstr( lpFileDef->mName.c_str(), "/magpie.moggsong_dta_ps3" ) ) )*/ 1 )
+            //{
+            //    int liNewFlags = 0;
 
-                //if( lpFileDef->miFlags2 == -1 )
-                //{
+            //    //if( lpFileDef->miFlags2 == -1 )
+            //    //{
 
-                //    //if( strstr( lpFileDef->mName.c_str(), "/config/amp_config." ) )
-                //    {
-                //        //mData.SetFileFlags1( ii + liFileOffset, 940 );
-                //        liNewFlags = rand();
-                //    }
+            //    //    //if( strstr( lpFileDef->mName.c_str(), "/config/amp_config." ) )
+            //    //    {
+            //    //        //mData.SetFileFlags1( ii + liFileOffset, 940 );
+            //    //        liNewFlags = rand();
+            //    //    }
 
-                //    std::cout << "set " << lpFileDef->mName.c_str() << " flags2 from " << lpFileDef->miFlags2 << " to " << liNewFlags << "\n";
-                //    mData.SetFileFlags2( ii + liFileOffset, liNewFlags );
-                //}
-            }
+            //    //    std::cout << "set " << lpFileDef->mName.c_str() << " flags2 from " << lpFileDef->miFlags2 << " to " << liNewFlags << "\n";
+            //    //    mData.SetFileFlags2( ii + liFileOffset, liNewFlags );
+            //    //}
+            //}
 
             mData.SetFileHash( ii + liFileOffset, lpFileDef->miHash );
             mData.SetFileSize( ii + liFileOffset, lpFileDef->miSize );

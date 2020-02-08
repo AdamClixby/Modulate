@@ -39,6 +39,9 @@
     <ClInclude Include="CArk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="CDtaFile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -60,6 +63,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="CArk.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Utils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CDtaFile.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

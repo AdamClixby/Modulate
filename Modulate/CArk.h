@@ -18,6 +18,7 @@ public:
 
     eError Load( const char* lpHeaderFilename );
     eError ExtractFiles( int liFirstFileIndex, int liNumFiles, const char* lpTargetDirectory );
+    bool FileExists( const char* lpFilename ) const;
 
     int GetNumFiles() const;
 
@@ -64,13 +65,11 @@ private:
         std::vector< std::string > mPathBreakdown;
     };
 
-    int GenerateFileList( const CArk& lReferenceHeader, const char* lpDirectory, std::vector<std::string>& laFilenames ) const;
     int GetNumberOfFilesIncludingDuplicates( const std::vector<std::string>& laFilenames ) const;
 
     eError LoadArkData();
 
     const sFileDefinition* GetFile( size_t lFilenameHash, int liDuplicateIndex ) const;
-    bool FileExists( const char* lpFilename ) const;
 
     int miNumArks = 0;
     int miNumFiles = 0;

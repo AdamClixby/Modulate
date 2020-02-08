@@ -5,6 +5,10 @@
 #include <direct.h>
 #include <windows.h>
 
+#include "Settings.h"
+#include <vector>
+#include <string>
+
 static char gpScratch[ 1024 * 1024 ];
 
 template <typename T>
@@ -122,4 +126,10 @@ static void StringFromCSV( char*& lpCSV, char*& lpOutput )
     memcpy( lpOutput, lpCSV, liLength );
     lpOutput += liLength;
     lpCSV = lpTab + 1;
+};
+
+class CUtils
+{
+public:
+    static int GenerateFileList( const class CArk& lReferenceHeader, const char* lpDirectory, std::vector<std::string>& laFilenames, const char* lpStringToMatch = nullptr );
 };

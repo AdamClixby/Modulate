@@ -9,6 +9,7 @@
 
 #include "Error.h"
 #include "Settings.h"
+#include "Utils.h"
 #include "CEncryptionCycler.h"
 
 CArk::CArk()
@@ -25,68 +26,6 @@ CArk::~CArk()
 
     delete[] mpArkData;
     mpArkData = nullptr;
-}
-
-int CArk::GenerateFileList( const CArk& lReferenceHeader, const char* lpDirectory, std::vector<std::string>& laFilenames ) const
-{
-    int liNumFiles = 0;
-
-    std::string lSearchString = lpDirectory;
-    lSearchString.append( "*.*" );
-
-    WIN32_FIND_DATAA lFindFileData;
-    HANDLE lFindFileHandle = FindFirstFileA( lSearchString.c_str(), &lFindFileData );
-    do
-    {
-        if( ( lFindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) == 0 )
-        {
-            std::string lSourceFilename = lpDirectory + std::string( lFindFileData.cFileName );
-            std::string lArkFilename = ( strstr( lpDirectory, "/" ) + 1 ) + std::string( lFindFileData.cFileName );
-            if( !lReferenceHeader.FileExists( lArkFilename.c_str() ) )
-            {
-                VERBOSE_OUT( "Skipping unknown file: " << lSourceFilename.c_str() << "\n" );
-                continue;
-            }
-
-            FILE* lFile = nullptr;
-            fopen_s( &lFile, lSourceFilename.c_str(), "rb" );
-            if( !lFile )
-            {
-                std::cout << "Unable to open file: " << lSourceFilename.c_str() << "\n";
-                continue;
-            }
-
-            std::cout << "Adding file: " << lSourceFilename.c_str() << "\n";
-            laFilenames.push_back( lArkFilename );
-
-            fseek( lFile, 0, SEEK_END );
-            int liFileSize = ftell( lFile );
-            fclose( lFile );
-
-            ++liNumFiles;
-        }
-    } while( FindNextFileA( lFindFileHandle, &lFindFileData ) != 0 );
-
-    lFindFileHandle = FindFirstFileA( lSearchString.c_str(), &lFindFileData );
-    do
-    {
-        if( lFindFileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY )
-        {
-            if( lFindFileData.cFileName[ 0 ] == '.' &&
-                ( lFindFileData.cFileName[ 1 ] == '.' || lFindFileData.cFileName[ 1 ] == 0 ) )
-            {
-                continue;
-            }
-
-            lSearchString = lpDirectory;
-            lSearchString.append( lFindFileData.cFileName );
-            lSearchString.append( "/" );
-
-            liNumFiles += GenerateFileList( lReferenceHeader, lSearchString.c_str(), laFilenames );
-        }
-    } while( FindNextFileA( lFindFileHandle, &lFindFileData ) != 0 );
-
-    return liNumFiles;
 }
 
 int CArk::GetNumberOfFilesIncludingDuplicates( const std::vector<std::string>& laFilenames ) const
@@ -114,7 +53,7 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
     std::vector<std::string> laFilenames;
     laFilenames.reserve( lReferenceHeader.miNumFiles );
 
-    miNumFiles = GenerateFileList( lReferenceHeader, lpInputDirectory, laFilenames );
+    miNumFiles = CUtils::GenerateFileList( lReferenceHeader, lpInputDirectory, laFilenames );
 
     if( miNumFiles <= 0 )
     {
@@ -124,10 +63,13 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
 
     VERBOSE_OUT( "Found " << miNumFiles << " files\n" );
     
+    int liNumFakes = 1;
     int liNumDuplicates = lReferenceHeader.GetNumberOfFilesIncludingDuplicates( laFilenames ) - miNumFiles;
-    mpFiles = new sFileDefinition[ miNumFiles + liNumDuplicates ];
+    mpFiles = new sFileDefinition[ miNumFiles + liNumDuplicates + liNumFakes ];
 
     unsigned int luTotalFileSize = 0;
+
+    int liFlagToInsert = -1;
 
     sFileDefinition* lpFileDef = mpFiles;
     std::vector<std::string>::const_iterator lFilename = laFilenames.begin();
@@ -140,6 +82,14 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
         while( lpReferenceFile )
         {
             *lpFileDef = *lpReferenceFile;
+
+            //if( lpFileDef - mpFiles < 226 ) // <226 works <227 fails
+            //if( lpFileDef->miFlags1 == -1 )
+            //    lpFileDef->miFlags1 = 2147483648;// -16777216;    //ff000000
+
+            //if( lpFileDef - mpFiles == 226 )
+            //    lpFileDef->miFlags1 = 0;
+
             lpReferenceFile = lReferenceHeader.GetFile( lFilenameHash, jj++ );
 
             if( strstr( lpFileDef->mName.c_str(), "/config/arkbuild/" ) ||
@@ -229,6 +179,16 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
                 {
                     return 1;
                 }
+
+                if( lpA->miFlags2 < lpB->miFlags2 )
+                {
+                    return -1;
+                }
+                else if( lpA->miFlags2 > lpB->miFlags2 )
+                {
+                    return 1;
+                }
+
                 return 0;
             }
         }
@@ -655,14 +615,14 @@ eError CArk::LoadArkData()
         delete[] mpArkData;
     }
 
-    unsigned int liTotalArkSize = 0;
+    unsigned int luTotalArkSize = 0;
     const sArkDefinition* lpArkDef = mpArks;
     for( int ii = 0; ii < miNumArks; ++ii, ++lpArkDef )
     {
-        liTotalArkSize += lpArkDef->muSize;
+        luTotalArkSize += lpArkDef->muSize;
     }
 
-    mpArkData = new char[ liTotalArkSize ];
+    mpArkData = new char[ luTotalArkSize ];
     char* lpArkPtr = mpArkData;
     
     lpArkDef = mpArks;
@@ -700,12 +660,32 @@ eError CArk::BuildArk( const char* lpInputDirectory )
         luTotalArkSize += lpFileDef->miSize;
     }
 
+    luTotalArkSize++;
+
     mpArkData = new char[ luTotalArkSize ];
-    char* lpArkPtr = mpArkData;
+    char* lpArkPtr = mpArkData + 1;
 
     lpFileDef = mpFiles;
-    for( int ii = 0; ii < miNumFiles; ++ii, ++lpFileDef )
+    for( int ii = 0; ii < miNumFiles; ++ii,++lpFileDef )
+    
+    //lpFileDef = mpFiles + miNumFiles - 1;
+    //for( int ii = miNumFiles - 1; ii >= 0; --ii, --lpFileDef )
+    //
+    //std::vector< sFileDefinition* > lapFiles;
+    //lapFiles.reserve( miNumFiles );
+
+    //lpFileDef = mpFiles;
+    //for( int ii = 0; ii < miNumFiles; ++ii, ++lpFileDef )
+    //{
+    //    lapFiles.push_back( lpFileDef );
+    //}
+
+    //while( !lapFiles.empty() )
     {
+        //int liEntry = rand() % lapFiles.size();
+        //lpFileDef = lapFiles[ liEntry ];
+        //lapFiles.erase( lapFiles.begin() + liEntry );
+
         if( lpFileDef->miSize == 0 )
         {
             continue;
@@ -736,14 +716,220 @@ eError CArk::BuildArk( const char* lpInputDirectory )
 
 eError CArk::SaveArk( const char* lpOutputDirectory, const char* lpHeaderFilename ) const
 {
-    const char* lpArkPtr = mpArkData;
-    const sArkDefinition* lpArkDef = mpArks;
-    for( int ii = 0; ii < miNumArks; ++ii )
+    auto lSaveArk = [&]()
     {
-        std::string lFilename = lpOutputDirectory + lpArkDef->mPath;
+        const char* lpArkPtr = mpArkData;
+        const sArkDefinition* lpArkDef = mpArks;
+        for( int ii = 0; ii < miNumArks; ++ii )
+        {
+            std::string lFilename = lpOutputDirectory + lpArkDef->mPath;
+            FILE* lpOutputFile = nullptr;
+            fopen_s( &lpOutputFile, lFilename.c_str(), "rb" );
+            if( lpOutputFile )
+            {
+                int liFileSize = 0;
+                if( !CSettings::mbOverwriteOutputFiles )
+                {
+                    fseek( lpOutputFile, 0, SEEK_END );
+                    liFileSize = ftell( lpOutputFile );
+                }
+                fclose( lpOutputFile );
+
+                if( liFileSize != 0 )
+                {
+                    VERBOSE_OUT( "Output file already exists, skipping: " << lFilename.c_str() << "\n" );
+                    continue;
+                }
+                else
+                {
+                    VERBOSE_OUT( "Overwriting " );
+                }
+            }
+            else
+            {
+                VERBOSE_OUT( "Writing " );
+            }
+            VERBOSE_OUT( lFilename.c_str() << "\n" );
+
+            fopen_s( &lpOutputFile, lFilename.c_str(), "wb" );
+            if( lpOutputFile )
+            {
+                fwrite( lpArkPtr, lpArkDef->muSize, 1, lpOutputFile );
+                fclose( lpOutputFile );
+
+                lpArkPtr += lpArkDef->muSize;
+            }
+            else
+            {
+                VERBOSE_OUT( "Failed to open file for writing: " << lFilename.c_str() << "\n" );
+            }
+        }
+    };
+
+    auto lSaveHeader = [ & ]()
+    {
+        const unsigned int kuUnencryptedVersion = 9;
+        FILE* lpHeaderFile = nullptr;
+        fopen_s( &lpHeaderFile, lpHeaderFilename, "rb" );
+        if( !lpHeaderFile )
+        {
+            return;
+        }
+
+        const int kiMaxHeaderSize = 512 * 1024;
+        unsigned char lacHeaderData[ kiMaxHeaderSize ];
+
+        const unsigned int kuEncryptedVersion = 0xc64eed30;
+        *(unsigned int*)( lacHeaderData ) = kuEncryptedVersion;
+
+        unsigned char* lpHeaderPtr = lacHeaderData + ( 1 * sizeof( unsigned int ) );
+        sHeaderBase* lpHeaderBase = (sHeaderBase*)lpHeaderPtr;
+        lpHeaderBase->muVersion = kuUnencryptedVersion;
+        lpHeaderBase->miNumArks = miNumArks;
+
+        lpHeaderPtr += sizeof( sHeaderBase );
+
+        sIntList* lpArkSizes = (sIntList*)lpHeaderPtr;
+        lpArkSizes->miNum = miNumArks;
+
+        const sArkDefinition* lpArk = mpArks;
+        for( int ii = 0; ii < miNumArks; ++ii, ++lpArk )
+        {
+            lpArkSizes->SetValue( ii, lpArk->muSize );
+        }
+
+        lpHeaderPtr += lpArkSizes->GetDataSize();
+
+        sStringList* lpArkPaths = (sStringList*)lpHeaderPtr;
+        lpArkPaths->miNum = miNumArks;
+
+        lpArk = mpArks;
+        for( int ii = 0; ii < miNumArks; ++ii, ++lpArk )
+        {
+            lpArkPaths->SetValue( ii, lpArk->mPath );
+        }
+
+        lpHeaderPtr += lpArkPaths->GetDataSize();
+
+        sIntList* lpArkChecksums = (sIntList*)lpHeaderPtr;
+        lpArkChecksums->miNum = miNumArks;
+        lpArkChecksums->SetValue( 0, 0 );
+        lpHeaderPtr += lpArkChecksums->GetDataSize();
+
+        sIntList* lpStringCounts = (sIntList*)lpHeaderPtr;
+        lpStringCounts->miNum = miNumArks;
+        lpStringCounts->SetValue( 0, 0 );
+        lpHeaderPtr += lpStringCounts->GetDataSize();
+
+        *(int*)lpHeaderPtr = miNumFiles;
+        lpHeaderPtr += sizeof( int );
+
+        const sFileDefinition* lpFile = mpFiles;
+        for( int ii = 0; ii < miNumFiles; ++ii, ++lpFile )
+        {
+            lpFile->Serialise( lpHeaderPtr );
+        }
+
+        sIntList* lpFileFlags2 = (sIntList*)lpHeaderPtr;
+        lpFileFlags2->miNum = miNumFiles;
+    
+        lpFile = mpFiles;
+        for( int ii = 0; ii < miNumFiles; ++ii, ++lpFile )
+        {
+            lpFileFlags2->SetValue( ii, lpFile->miFlags2 );
+        }
+
+        lpHeaderPtr += lpFileFlags2->GetDataSize();
+        
+        //lpFile = mpFiles;
+        //for( int ii = 0; ii < miNumFiles; ++ii, ++lpFile )
+        //{
+        //    std::cout << ii << ":\t" << lpFile->miFlags1 << "\t" << lpFile->miFlags2 << "\t" << lpFile->mName.c_str() << "\n";
+        //}
+        //std::cout << "\n\n";
+
+        //{
+        //    int liVal = -1;
+        //    for( ; liVal < miNumFiles; )
+        //    {
+        //        lpFile = mpFiles;
+        //        for( int ii = 0; ii < miNumFiles; ++ii, ++lpFile )
+        //        {
+        //            if( (liVal == -1 && lpFile->miFlags1 == liVal && lpFile->miFlags2 == liVal ) ||
+        //                ( liVal != -1 && ( lpFile->miFlags1 == liVal || lpFile->miFlags2 == liVal ) ) )
+        //            {
+        //                std::cout << "\t" << ii << "\t" << lpFile->miFlags1 << "\t" << lpFile->miFlags2 << "\t" << lpFile->mName.c_str() << "\n";
+        //            }
+        //        }
+        //        ++liVal;
+        //    }
+        //}
+        //std::cout << "\n\n";
+
+        //int liNumOutput = 0;
+        //int liPreviousLowestFlags = -10000;
+        //for( ; liNumOutput < miNumFiles; )
+        //{
+        //    int liLowestFlags = INT_MAX;
+        //    for( int jj = 0; jj < miNumFiles; ++jj )
+        //    {
+        //        const sFileDefinition* lpFileDef = &mpFiles[ jj ];
+        //        if( lpFileDef->miFlags1 < liLowestFlags &&
+        //            lpFileDef->miFlags1 > liPreviousLowestFlags )
+        //        {
+        //            liLowestFlags = lpFileDef->miFlags1;
+        //        }
+        //    }
+        //    for( int jj = 0; jj < miNumFiles; ++jj )
+        //    {
+        //        const sFileDefinition* lpFileDef = &mpFiles[ jj ];
+        //        if( lpFileDef->miFlags1 == liLowestFlags )
+        //        {
+        //            ++liNumOutput;
+        //            std::cout << jj << ":\t"  << lpFileDef->miFlags1 << "\t" << lpFileDef->miFlags2 << "\t" << lpFileDef->mName.c_str() << "\n";
+        //        }
+        //    }
+        //    liPreviousLowestFlags = liLowestFlags;
+        //}
+
+        //std::cout << "\n\n";
+
+        //liNumOutput = 0;
+        //liPreviousLowestFlags = -10000;
+        //for( ; liNumOutput < miNumFiles; )
+        //{
+        //    int liLowestFlags = INT_MAX;
+        //    for( int jj = 0; jj < miNumFiles; ++jj )
+        //    {
+        //        const sFileDefinition* lpFileDef = &mpFiles[ jj ];
+        //        if( lpFileDef->miFlags2 < liLowestFlags &&
+        //            lpFileDef->miFlags2 > liPreviousLowestFlags )
+        //        {
+        //            liLowestFlags = lpFileDef->miFlags2;
+        //        }
+        //    }
+        //    for( int jj = 0; jj < miNumFiles; ++jj )
+        //    {
+        //        const sFileDefinition* lpFileDef = &mpFiles[ jj ];
+        //        if( lpFileDef->miFlags2 == liLowestFlags )
+        //        {
+        //            ++liNumOutput;
+        //            std::cout << jj << ":\t" << lpFileDef->miFlags1 << "\t" << lpFileDef->miFlags2 << "\t" << lpFileDef->miSize << "\t" << lpFileDef->mName.c_str() << "\n";
+        //        }
+        //    }
+        //    liPreviousLowestFlags = liLowestFlags;
+        //}
+
+        int liHeaderDataSize = (int)( lpHeaderPtr - lacHeaderData );
+
+        CEncryptionCycler lDecrypt;
+        lDecrypt.Cycle( lacHeaderData + sizeof( unsigned int ), liHeaderDataSize - sizeof( unsigned int ), -967906000 );
+
+        std::string lHeaderFilename = lpOutputDirectory + std::string( lpHeaderFilename );
+   
         FILE* lpOutputFile = nullptr;
-        fopen_s( &lpOutputFile, lFilename.c_str(), "rb" );
-        if( lpOutputFile  )
+        fopen_s( &lpOutputFile, lHeaderFilename.c_str(), "rb" );
+        if( lpOutputFile )
         {
             int liFileSize = 0;
             if( !CSettings::mbOverwriteOutputFiles )
@@ -755,8 +941,7 @@ eError CArk::SaveArk( const char* lpOutputDirectory, const char* lpHeaderFilenam
 
             if( liFileSize != 0 )
             {
-                VERBOSE_OUT( "Output file already exists, skipping: " << lFilename.c_str() << "\n" );
-                continue;
+                VERBOSE_OUT( "Output file already exists, skipping: " << lHeaderFilename.c_str() << "\n" );
             }
             else
             {
@@ -767,140 +952,22 @@ eError CArk::SaveArk( const char* lpOutputDirectory, const char* lpHeaderFilenam
         {
             VERBOSE_OUT( "Writing " );
         }
-        VERBOSE_OUT( lFilename.c_str() << "\n" );
+        VERBOSE_OUT( lHeaderFilename.c_str() << "\n" );
 
-        fopen_s( &lpOutputFile, lFilename.c_str(), "wb" );
+        fopen_s( &lpOutputFile, lHeaderFilename.c_str(), "wb" );
         if( lpOutputFile )
         {
-            fwrite( lpArkPtr, lpArkDef->muSize, 1, lpOutputFile );
+            fwrite( lacHeaderData, liHeaderDataSize, 1, lpOutputFile );
             fclose( lpOutputFile );
-
-            lpArkPtr += lpArkDef->muSize;
         }
         else
         {
-            VERBOSE_OUT( "Failed to open file for writing: " << lFilename.c_str() << "\n" );
+            VERBOSE_OUT( "Failed to open file for writing: " << lHeaderFilename.c_str() << "\n" );
         }
-    }
+    };
 
-    const unsigned int kuUnencryptedVersion = 9;
-    FILE* lpHeaderFile = nullptr;
-    fopen_s( &lpHeaderFile, lpHeaderFilename, "rb" );
-    if( !lpHeaderFile )
-    {
-        return eError_FailedToOpenFile;
-    }
-
-    const int kiMaxHeaderSize = 512 * 1024;
-    unsigned char lacHeaderData[ kiMaxHeaderSize ];
-
-    const unsigned int kuEncryptedVersion = 0xc64eed30;
-    *(unsigned int*)( lacHeaderData ) = kuEncryptedVersion;
-    //*(unsigned int*)( lacHeaderData + sizeof( unsigned int ) ) = -967906000;
-
-    unsigned char* lpHeaderPtr = lacHeaderData + ( 1 * sizeof( unsigned int ) );
-    sHeaderBase* lpHeaderBase = (sHeaderBase*)lpHeaderPtr;
-    lpHeaderBase->muVersion = kuUnencryptedVersion;
-    lpHeaderBase->miNumArks = miNumArks;
-
-    lpHeaderPtr += sizeof( sHeaderBase );
-
-    sIntList* lpArkSizes = (sIntList*)lpHeaderPtr;
-    lpArkSizes->miNum = miNumArks;
-
-    const sArkDefinition* lpArk = mpArks;
-    for( int ii = 0; ii < miNumArks; ++ii, ++lpArk )
-    {
-        lpArkSizes->SetValue( ii, lpArk->muSize );
-    }
-
-    lpHeaderPtr += lpArkSizes->GetDataSize();
-
-    sStringList* lpArkPaths = (sStringList*)lpHeaderPtr;
-    lpArkPaths->miNum = miNumArks;
-
-    lpArk = mpArks;
-    for( int ii = 0; ii < miNumArks; ++ii, ++lpArk )
-    {
-        lpArkPaths->SetValue( ii, lpArk->mPath );
-    }
-
-    lpHeaderPtr += lpArkPaths->GetDataSize();
-
-    sIntList* lpArkChecksums = (sIntList*)lpHeaderPtr;
-    lpArkChecksums->miNum = miNumArks;
-    lpArkChecksums->SetValue( 0, 0 );
-    lpHeaderPtr += lpArkChecksums->GetDataSize();
-
-    sIntList* lpStringCounts = (sIntList*)lpHeaderPtr;
-    lpStringCounts->miNum = miNumArks;
-    lpStringCounts->SetValue( 0, 0 );
-    lpHeaderPtr += lpStringCounts->GetDataSize();
-
-    *(int*)lpHeaderPtr = miNumFiles;
-    lpHeaderPtr += sizeof( int );
-
-    const sFileDefinition* lpFile = mpFiles;
-    for( int ii = 0; ii < miNumFiles; ++ii, ++lpFile )
-    {
-        lpFile->Serialise( lpHeaderPtr );
-    }
-
-    sIntList* lpFileFlags2 = (sIntList*)lpHeaderPtr;
-    lpFileFlags2->miNum = miNumFiles;
-    
-    lpFile = mpFiles;
-    for( int ii = 0; ii < miNumFiles; ++ii, ++lpFile )
-    {
-        lpFileFlags2->SetValue( ii, lpFile->miFlags2 );
-    }
-    lpHeaderPtr += lpFileFlags2->GetDataSize();
-
-    int liHeaderDataSize = (int)( lpHeaderPtr - lacHeaderData );
-
-    CEncryptionCycler lDecrypt;
-    lDecrypt.Cycle( lacHeaderData + sizeof( unsigned int ), liHeaderDataSize - sizeof( unsigned int ), -967906000 );
-
-    std::string lHeaderFilename = lpOutputDirectory + std::string( lpHeaderFilename );
-   
-    FILE* lpOutputFile = nullptr;
-    fopen_s( &lpOutputFile, lHeaderFilename.c_str(), "rb" );
-    if( lpOutputFile )
-    {
-        int liFileSize = 0;
-        if( !CSettings::mbOverwriteOutputFiles )
-        {
-            fseek( lpOutputFile, 0, SEEK_END );
-            liFileSize = ftell( lpOutputFile );
-        }
-        fclose( lpOutputFile );
-
-        if( liFileSize != 0 )
-        {
-            VERBOSE_OUT( "Output file already exists, skipping: " << lHeaderFilename.c_str() << "\n" );
-            return eError_NoError;
-        }
-        else
-        {
-            VERBOSE_OUT( "Overwriting " );
-        }
-    }
-    else
-    {
-        VERBOSE_OUT( "Writing " );
-    }
-    VERBOSE_OUT( lHeaderFilename.c_str() << "\n" );
-
-    fopen_s( &lpOutputFile, lHeaderFilename.c_str(), "wb" );
-    if( lpOutputFile )
-    {
-        fwrite( lacHeaderData, liHeaderDataSize, 1, lpOutputFile );
-        fclose( lpOutputFile );
-    }
-    else
-    {
-        VERBOSE_OUT( "Failed to open file for writing: " << lHeaderFilename.c_str() << "\n" );
-    }
+    lSaveHeader();
+    lSaveArk();
 
     return eError_NoError;
 }

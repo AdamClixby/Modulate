@@ -153,6 +153,7 @@
   <ItemGroup>
     <ClInclude Include="CAmpConfig.h" />
     <ClInclude Include="CArk.h" />
+    <ClInclude Include="CDtaFile.h" />
     <ClInclude Include="CEncryptedHeader.h" />
     <ClInclude Include="CEncryptionCycler.h" />
     <ClInclude Include="Error.h" />
@@ -163,6 +164,7 @@
   <ItemGroup>
     <ClCompile Include="CAmpConfig.cpp" />
     <ClCompile Include="CArk.cpp" />
+    <ClCompile Include="CDtaFile.cpp" />
     <ClCompile Include="CEncryptedHeader.cpp" />
     <ClCompile Include="CEncryptionCycler.cpp" />
     <ClCompile Include="Modulate.cpp" />
@@ -173,6 +175,12 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Settings.cpp" />
+    <ClCompile Include="Utils.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </ClCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

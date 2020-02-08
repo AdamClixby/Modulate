@@ -15,6 +15,7 @@
 #include "Error.h"
 #include "Settings.h"
 #include "CArk.h"
+#include "CDtaFile.h"
 
 unsigned char* GetDecryptedHeaderData( const char* lpFilename )
 {
@@ -310,6 +311,46 @@ eError SetInputDirectory( const char* lpInputDirectoryName )
     return eError_NoError;
 }
 
+eError BuildSongs( const char* )
+{
+    CArk lReferenceArkHeader;
+    eError leError = lReferenceArkHeader.Load( CSettings::mpInputFilename );
+    SHOW_ERROR_AND_RETURN;
+
+    std::vector< std::string > laFilenames;
+    laFilenames.reserve( lReferenceArkHeader.GetNumFiles() );
+
+    const char* lpMoggSong = ".moggsong";
+    const size_t kiMoggSongStrLen = strlen( lpMoggSong );
+
+    CUtils::GenerateFileList( lReferenceArkHeader, CSettings::mInputDirectory.c_str(), laFilenames, lpMoggSong );
+    for( std::vector< std::string >::const_iterator lIter = laFilenames.begin(); lIter != laFilenames.end(); ++lIter )
+    {
+        const std::string& lFilename = *lIter;
+        const char* lpExtension = strstr( lFilename.c_str(), lpMoggSong );
+        if( lpExtension != ( lFilename.c_str() + strlen( lFilename.c_str() ) - kiMoggSongStrLen ) )
+        {
+            continue;
+        }
+
+        if( strstr( lFilename.c_str(), "wetware" ) == nullptr )
+        {
+            continue;
+        }
+
+        std::cout << "Compiling " << lFilename.c_str() << "\n";
+
+        CDtaFile lDataFile;
+        lDataFile.Load( "" );
+
+        std::string lOutFilename = CSettings::mInputDirectory + lFilename;
+        lOutFilename.append( "_dta_ps3" );
+        lDataFile.Save( lOutFilename.c_str() );
+    }
+
+    return eError_NoError;
+}
+
 eError SetOutputDirectory( const char* lpOutputDirectoryName )
 {
     bool lbValidDir = false;
@@ -344,7 +385,7 @@ eError SetOutputDirectory( const char* lpOutputDirectoryName )
 
 eError Unpack( const char* )
 {
-    VERBOSE_OUT( "\nUnpacking\n" );
+    std::cout << "Unpacking " << CSettings::mpInputFilename << " to " << CSettings::mOutputDirectory.c_str() << "\n";
 
     CArk lArkHeader;
     eError leError = lArkHeader.Load( CSettings::mpInputFilename );
@@ -358,7 +399,7 @@ eError Unpack( const char* )
 
 eError Pack( const char* )
 {
-    VERBOSE_OUT( "\nPacking\n" );
+    std::cout << "Packing " << CSettings::mpOutputFilename << " from " << CSettings::mInputDirectory.c_str() << "\n";
 
     CArk lReferenceArkHeader;
     eError leError = lReferenceArkHeader.Load( CSettings::mpInputFilename );
@@ -398,18 +439,20 @@ int main( int argc, char *argv[], char *envp[] )
         bool mbIsFinalCommand;
     };
     sCommandPair kaCommands[] = {
-        "-verbose", EnableVerbose,      false,
-        "-force",   EnableForceWrite,   false,
-        "-infile",  SetInputFile,       false,
-        "-outfile", SetOutputFile,      false,
-        "-indir",   SetInputDirectory,  false,
-        "-outdir",  SetOutputDirectory, false,
-        "unpack",   Unpack,             true,
-        "pack",     Pack,               true,
-        nullptr,    nullptr,            false
+        "-verbose",     EnableVerbose,      false,
+        "-force",       EnableForceWrite,   false,
+        "-infile",      SetInputFile,       false,
+        "-outfile",     SetOutputFile,      false,
+        "-indir",       SetInputDirectory,  false,
+        "-outdir",      SetOutputDirectory, false,
+        "unpack",       Unpack,             true,
+        "buildsongs",   BuildSongs,         false,
+        "pack",         Pack,               true,
+        nullptr,        nullptr,            false
     };
 
     bool lbPerformedFinalCommand = false;
+    int liCommandsPerformed = 0;
 
     sCommandPair* lpCommand = kaCommands;
     do
@@ -424,12 +467,14 @@ int main( int argc, char *argv[], char *envp[] )
                 }
 
                 lbPerformedFinalCommand |= lpCommand->mbIsFinalCommand;
+                ++liCommandsPerformed;
 
                 const char* lpNextArg = ( ii < ( argc - 1 ) ) ? argv[ ii + 1 ] : "";
                 eError leError = lpCommand->mFunction( lpNextArg );
                 switch( leError )
                 {
                 case eError_NoError:
+                    std::cout << "\n";
                     break;
                 default:
                     ShowError( leError );
@@ -443,7 +488,7 @@ int main( int argc, char *argv[], char *envp[] )
         ++lpCommand;
     } while( lpCommand->mpCommandName );
 
-    if( !lbPerformedFinalCommand )
+    if( liCommandsPerformed == 0 )
     {
         PrintUsage();
     }
