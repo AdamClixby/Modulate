@@ -65,6 +65,8 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
     
     int liNumFakes = 1;
     int liNumDuplicates = lReferenceHeader.GetNumberOfFilesIncludingDuplicates( laFilenames ) - miNumFiles;
+
+    delete[] mpFiles;
     mpFiles = new sFileDefinition[ miNumFiles + liNumDuplicates + liNumFakes ];
 
     unsigned int luTotalFileSize = 0;
@@ -82,14 +84,6 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
         while( lpReferenceFile )
         {
             *lpFileDef = *lpReferenceFile;
-
-            //if( lpFileDef - mpFiles < 226 ) // <226 works <227 fails
-            //if( lpFileDef->miFlags1 == -1 )
-            //    lpFileDef->miFlags1 = 2147483648;// -16777216;    //ff000000
-
-            //if( lpFileDef - mpFiles == 226 )
-            //    lpFileDef->miFlags1 = 0;
-
             lpReferenceFile = lReferenceHeader.GetFile( lFilenameHash, jj++ );
 
             if( strstr( lpFileDef->mName.c_str(), "/config/arkbuild/" ) ||
@@ -199,6 +193,8 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
     std::qsort( mpFiles, miNumFiles, sizeof( sFileDefinition ), lFileDefinitionSort );
 
     miNumArks = 1;
+
+    delete[] mpArks;
     mpArks = new sArkDefinition[ 1 ];
     mpArks->mPath = lReferenceHeader.mpArks[ 0 ].mPath;
 
@@ -249,9 +245,11 @@ eError CArk::Load( const char* lpHeaderFilename )
     miNumArks = lpHeaderBase->miNumArks;
     if( miNumArks < 0 || miNumArks > 100 )
     {
-        return eError_ValueOutOfBounds;
+        eError leError = eError_ValueOutOfBounds;
+        SHOW_ERROR_AND_RETURN_W( delete[] lpHeaderData );
     }
 
+    delete[] mpArks;
     mpArks = new sArkDefinition[ miNumArks ];
 
     lpHeaderPtr += sizeof( sHeaderBase );
@@ -286,8 +284,8 @@ eError CArk::Load( const char* lpHeaderFilename )
 
     if( *(int*)lpHeaderPtr != 0 )
     {
-        delete[] lpHeaderData;
-        return eError_InvalidData;
+        eError leError = eError_InvalidData;
+        SHOW_ERROR_AND_RETURN_W( delete[] lpHeaderData );
     }
 
     lpHeaderPtr += sizeof( int );   // Skip ark strings
@@ -297,9 +295,11 @@ eError CArk::Load( const char* lpHeaderFilename )
 
     if( miNumFiles < 0 || miNumFiles > 25000 )
     {
-        return eError_ValueOutOfBounds;
+        eError leError = eError_ValueOutOfBounds;
+        SHOW_ERROR_AND_RETURN_W( delete[] lpHeaderData );
     }
 
+    delete[] mpFiles;
     mpFiles = new sFileDefinition[ miNumFiles ];
     sFileDefinition* lpFile = mpFiles;
     for( int ii = 0; ii < miNumFiles; ++ii, ++lpFile )
@@ -317,7 +317,6 @@ eError CArk::Load( const char* lpHeaderFilename )
     }
 
     delete[] lpHeaderData;
-
     return eError_NoError;
 }
 
@@ -387,7 +386,7 @@ eError CArk::ExtractFiles( int liFirstFileIndex, int liNumFiles, const char* lpT
         fopen_s( &lpOutputFile, lOutputPath.c_str(), "wb" );
         if( !lpOutputFile )
         {
-            eError leError = eError_FailedToOpenFile;
+            eError leError = eError_FailedToCreateFile;
             SHOW_ERROR_AND_RETURN;
         }
 
@@ -622,6 +621,7 @@ eError CArk::LoadArkData()
         luTotalArkSize += lpArkDef->muSize;
     }
 
+    delete[] mpArkData;
     mpArkData = new char[ luTotalArkSize ];
     char* lpArkPtr = mpArkData;
     
@@ -662,6 +662,7 @@ eError CArk::BuildArk( const char* lpInputDirectory )
 
     luTotalArkSize++;
 
+    delete[] mpArkData;
     mpArkData = new char[ luTotalArkSize ];
     char* lpArkPtr = mpArkData + 1;
 
@@ -737,19 +738,19 @@ eError CArk::SaveArk( const char* lpOutputDirectory, const char* lpHeaderFilenam
 
                 if( liFileSize != 0 )
                 {
-                    VERBOSE_OUT( "Output file already exists, skipping: " << lFilename.c_str() << "\n" );
+                    std::cout << "Output file already exists: " << lFilename.c_str() << "\n";
                     continue;
                 }
                 else
                 {
-                    VERBOSE_OUT( "Overwriting " );
+                    std::cout << "Overwriting ";
                 }
             }
             else
             {
-                VERBOSE_OUT( "Writing " );
+                std::cout << "Writing ";
             }
-            VERBOSE_OUT( lFilename.c_str() << "\n" );
+            std::cout << lFilename.c_str() << "\n";
 
             fopen_s( &lpOutputFile, lFilename.c_str(), "wb" );
             if( lpOutputFile )
@@ -761,7 +762,7 @@ eError CArk::SaveArk( const char* lpOutputDirectory, const char* lpHeaderFilenam
             }
             else
             {
-                VERBOSE_OUT( "Failed to open file for writing: " << lFilename.c_str() << "\n" );
+                std::cout << "Failed to open file for writing: " << lFilename.c_str() << "\n";
             }
         }
     };

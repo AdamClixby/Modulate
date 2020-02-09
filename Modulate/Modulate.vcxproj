@@ -151,10 +151,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="CAmpConfig.h" />
     <ClInclude Include="CArk.h" />
     <ClInclude Include="CDtaFile.h" />
-    <ClInclude Include="CEncryptedHeader.h" />
     <ClInclude Include="CEncryptionCycler.h" />
     <ClInclude Include="Error.h" />
     <ClInclude Include="pch.h" />
@@ -162,10 +160,8 @@
     <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CAmpConfig.cpp" />
     <ClCompile Include="CArk.cpp" />
     <ClCompile Include="CDtaFile.cpp" />
-    <ClCompile Include="CEncryptedHeader.cpp" />
     <ClCompile Include="CEncryptionCycler.cpp" />
     <ClCompile Include="Modulate.cpp" />
     <ClCompile Include="pch.cpp">

@@ -12,6 +12,8 @@ enum eError {
     eError_InvalidData,
     eError_NoData,
     eError_FailedToCreateFile,
+    eError_FailedToDeleteFile,
+    eError_InvalidParameter,
     eError_NumTypes
 };
 
@@ -27,10 +29,17 @@ static void ShowError( eError leError )
         "Bad data",
         "Missing data",
         "Failed to create file",
+        "Failed to delete file",
+        "Invalid parameter",
     };
 
     std::cout << "ERROR: " << lapErrorNames[ leError ] << "\n";
 }
+
+#define ERROR_RETURN                    if( leError != eError_NoError )   \
+                                        {                                 \
+                                            return leError;               \
+                                        }
 
 #define SHOW_ERROR_AND_RETURN           if( leError != eError_NoError )   \
                                         {                                 \

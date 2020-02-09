@@ -10,7 +10,7 @@
 class CDtaNodeBase
 {
 public:
-    CDtaNodeBase() : msNodeId( siNextId++ ), mbIsBaseNode( true ) {}
+    CDtaNodeBase( int liNodeId ) : msNodeId( liNodeId ) {}
 
     virtual ~CDtaNodeBase()
     {
@@ -25,27 +25,41 @@ public:
         return mbIsBaseNode;
     }
 
-    CDtaNodeBase* AddNode()
+    void SetTypeOverride( int liNewType )
     {
-        maChildren.push_back( new CDtaNodeBase() );
+        miTypeOverride = liNewType;
+    }
+
+    CDtaNodeBase* AddNode( short lsNodeId )
+    {
+        maChildren.push_back( new CDtaNodeBase( lsNodeId ) );
         return maChildren.back();
     }
 
     template < class T >
-    void AddChild( const T& lValue );
+    CDtaNodeBase* AddChild( const T& lValue );
 
     void Save( unsigned char*& lpStream ) const;
 
     virtual void SaveToStream( unsigned char*& lpStream ) const;
 
-    static int siNextId;
-
 private:
+    short GetHighestNodeId() const
+    {
+        if( maChildren.empty() )
+        {
+            return msNodeId;
+        }
+
+        return maChildren.back()->GetHighestNodeId();
+    }
+
     std::list< CDtaNodeBase* > maChildren;
-    short msNodeId;
 
 protected:
-    bool mbIsBaseNode;
+    int   miTypeOverride = -1;
+    short msNodeId;
+    bool mbIsBaseNode = true;
 };
 
 
@@ -53,8 +67,8 @@ template < class T >
 class CDtaNode : public CDtaNodeBase
 {
 public:
-    CDtaNode( const T& lValue )
-        : CDtaNodeBase()
+    CDtaNode( int liNodeId, const T& lValue )
+        : CDtaNodeBase( liNodeId )
     {
         mValue = lValue;
         mbIsBaseNode = false;
@@ -67,10 +81,11 @@ private:
 };
 
 template < class T >
-void CDtaNodeBase::AddChild( const T& lValue )
+CDtaNodeBase* CDtaNodeBase::AddChild( const T& lValue )
 {
-    CDtaNode< T >* lNewNode = new CDtaNode< T >( lValue );
+    CDtaNode< T >* lNewNode = new CDtaNode< T >( msNodeId, lValue );
     maChildren.push_back( lNewNode );
+    return lNewNode;
 }
 
 void CDtaNode< int >::SaveToStream( unsigned char*& lpStream ) const
@@ -93,7 +108,7 @@ void CDtaNode< float >::SaveToStream( unsigned char*& lpStream ) const
 
 void CDtaNode< std::string >::SaveToStream( unsigned char*& lpStream ) const
 {
-    WriteToStream< int >( lpStream, 5 );
+    WriteToStream< int >( lpStream, miTypeOverride != -1 ? miTypeOverride : 5 );
     WriteToStream( lpStream, mValue );
 }
 
@@ -101,27 +116,36 @@ void CDtaNode< std::string >::SaveToStream( unsigned char*& lpStream ) const
 class CDtaFile
 {
 public:
-    eError Load( const char* lpFilename );
+    eError LoadMoggSong( const char* lpFilename );
     eError Save( const char* lpFilename ) const;
 
+    void SetMoggPath( const std::string& lFilename ) { mMoggPath = lFilename; }
+    void SetMidiPath( const std::string& lFilename ) { mMidiPath = lFilename; }
+
 private:
-    std::string mMoggPath;
-    std::string mMidiPath;
+    eError ProcessMoggSongKey( char*& lpKey );
 
-    std::string mTitle;
-    std::string mTitleShort;
-    std::string mArtist;
-    std::string mArtistShort;
-    std::string mDescription;
+    bool mbLoadingTrackData = false; // TODO - move to moggsongloader class
 
-    float mfTunnelScale;
+    std::string mMoggPath = "";
+    std::string mMidiPath = "";
 
-    int miBPM;
-    int miLength;
-    int miCountIn;
+    std::string mTitle = "";
+    std::string mTitleShort = "";
+    std::string mArtist = "";
+    std::string mArtistShort = "";
+    std::string mDescription = "";
+    std::string mUnlockRequirement = "";
 
-    unsigned int muPreviewStartMS;
-    unsigned int muPreviewDurationMS;
+    float mfTunnelScale = 0.0f;
+
+    int miBPM = 0;
+    int miLength = 0;
+    int miCountIn = 0;
+    int miBossLevel = -1;
+
+    int miPreviewStartMS = 0;
+    int miPreviewDurationMS = 10000;
 
     struct sTrackDefinition
     {
@@ -135,8 +159,9 @@ private:
     std::vector< sTrackDefinition > maTracks;
     std::vector< int > maEnableOrder;
     std::vector< int > maSectionStartBars;
+    std::vector< float > maActiveTrackDB;
 
-    std::string mArenaPath;
+    std::string mArenaPath = "";
     
     enum eDifficulty {
         eDifficulty_Beginner,
@@ -151,6 +176,6 @@ private:
         eStars_G,
         eStars_NumTypes
     };
-    int maScoreGoals[ eDifficulty_NumTypes ][ eStars_NumTypes ];
+    int maScoreGoals[ eDifficulty_NumTypes ][ eStars_NumTypes ] = { { 0, 20, 30 }, { 0, 20, 30 }, { 0, 20, 30 }, { 0, 20, 30 } };
 };
 

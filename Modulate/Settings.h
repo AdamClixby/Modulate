@@ -5,10 +5,6 @@
 class CSettings
 {
 public:
-    static const char* mpInputFilename;
-    static std::string mInputDirectory;
-    static const char* mpOutputFilename;
-    static std::string mOutputDirectory;
     static bool mbVerbose;
     static bool mbOverwriteOutputFiles;
 };
