@@ -279,7 +279,7 @@ eError CDtaFile::Save( const char* lpFilename ) const
     CDtaNodeBase* lpBPMNode = lRoot.AddNode( ksTitleNodeId + 6 );
     {
         lpBPMNode->AddChild( std::string( "bpm" ) );
-        lpBPMNode->AddChild( miBPM );
+        lpBPMNode->AddChild( (int)roundf( mfBPM ) );
     }
 
     if( miBossLevel >= 0 )
@@ -304,6 +304,8 @@ eError CDtaFile::Save( const char* lpFilename ) const
     }
 
     lRoot.Save( lpDataPtr );
+
+    std::cout << "Writing " << lpFilename << "\n";
 
     lpOutputFile = nullptr;
     fopen_s( &lpOutputFile, lpFilename, "wb" );
@@ -394,6 +396,16 @@ eError CDtaFile::ProcessMoggSongKey( char*& lpData )
         miLength = atoi( lLengthString.c_str() );
         return eError_NoError;
     }
+
+    auto lReadFloat = [ & ]( float& lValue )
+    {
+        std::string lCountinString;
+        eError leError = lReadString( lCountinString );
+        ERROR_RETURN;
+
+        lValue = (float)atof( lCountinString.c_str() );
+        return eError_NoError;
+    };
 
     auto lReadInt = [ & ]( int& lValue)
     {
@@ -689,12 +701,13 @@ eError CDtaFile::ProcessMoggSongKey( char*& lpData )
     READ_STRING( "desc",               mDescription );
     READ_STRING( "unlock_requirement", mUnlockRequirement );
 
-#define READ_INT( lpName, lVariable ) if( IS_KEY( lpName ) ) { return lReadInt( lVariable ); }
+#define READ_INT( lpName, lVariable )   if( IS_KEY( lpName ) ) { return lReadInt( lVariable );   }
+#define READ_FLOAT( lpName, lVariable ) if( IS_KEY( lpName ) ) { return lReadFloat( lVariable ); }
 
     READ_INT( "boss_level",        miBossLevel );
-    READ_INT( "bpm",               miBPM );
     READ_INT( "preview_start_ms",  miPreviewStartMS );
     READ_INT( "preview_length_ms", miPreviewDurationMS );
+    READ_FLOAT( "bpm", mfBPM );
 
 #define IGNORE_KEY( lpName ) if( IS_KEY( lpName ) ) { std::string lIgnore; return lReadString( lIgnore ); }
 

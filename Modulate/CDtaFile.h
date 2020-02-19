@@ -122,6 +122,8 @@ public:
     void SetMoggPath( const std::string& lFilename ) { mMoggPath = lFilename; }
     void SetMidiPath( const std::string& lFilename ) { mMidiPath = lFilename; }
 
+    float GetBPM() const { return mfBPM; }
+
 private:
     eError ProcessMoggSongKey( char*& lpKey );
 
@@ -139,7 +141,7 @@ private:
 
     float mfTunnelScale = 0.0f;
 
-    int miBPM = 0;
+    float mfBPM = 0.0f;
     int miLength = 0;
     int miCountIn = 0;
     int miBossLevel = -1;

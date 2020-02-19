@@ -74,6 +74,61 @@ eError BuildSingleSong( std::deque< std::string >& laParams )
     leError = lDataFile.Save( lOutFilename.c_str() );
     SHOW_ERROR_AND_RETURN;
 
+    int liMidiBPM = (int)roundf( 60000000.0f / lDataFile.GetBPM() );
+
+    std::string lMidiFilename = lDirectory + "ps3/songs/" + lSongName + "/" + lSongName + ".mid_ps3";
+    FILE* lpMidiFile = nullptr;
+    fopen_s( &lpMidiFile, lMidiFilename.c_str(), "rb" );
+    if( !lpMidiFile )
+    {
+        return eError_FailedToOpenFile;
+    }
+
+    fseek( lpMidiFile, 0, SEEK_END );
+    int liMidiFileSize = ftell( lpMidiFile );
+    fseek( lpMidiFile, 0, SEEK_SET );
+
+    unsigned char* lpMidiData = new unsigned char[ liMidiFileSize ];
+    fread( lpMidiData, liMidiFileSize, 1, lpMidiFile );
+    fclose( lpMidiFile );
+
+    lpMidiData[ 0x2A ] = ( liMidiBPM >> 16 ) & 0xFF;
+    lpMidiData[ 0x2B ] = ( liMidiBPM >>  8 ) & 0xFF;
+    lpMidiData[ 0x2C ] = ( liMidiBPM >>  0 ) & 0xFF;
+
+    unsigned char* lpDataPtr = lpMidiData + liMidiFileSize - 1024;
+    do
+    {
+        while( lpDataPtr < lpMidiData + liMidiFileSize &&
+              *lpDataPtr != 0xAB )
+        {
+            ++lpDataPtr;
+        }
+
+        if( lpDataPtr == lpMidiData + liMidiFileSize )
+        {
+            return eError_InvalidData;
+        }
+    } while( *(int64_t*)lpDataPtr != 0xcdabcdabcdabcdab );
+
+    lpDataPtr += 21;
+    lpDataPtr[ 0 ] = ( liMidiBPM >> 16 ) & 0xFF;
+    lpDataPtr[ 1 ] = ( liMidiBPM >>  8 ) & 0xFF;
+    lpDataPtr[ 2 ] = ( liMidiBPM >>  0 ) & 0xFF;
+
+    std::cout << "Writing " << lMidiFilename.c_str() << "\n";
+
+    fopen_s( &lpMidiFile, lMidiFilename.c_str(), "wb" );
+    if( !lpMidiFile )
+    {
+        return eError_FailedToCreateFile;
+    }
+
+    fwrite( lpMidiData, liMidiFileSize, 1, lpMidiFile );
+    fclose( lpMidiFile );
+
+    delete[] lpMidiData;
+
     return eError_NoError;
 }
 
@@ -214,7 +269,7 @@ eError ReplaceSong( std::deque< std::string >& laParams )
         std::cout << lSourcePath << " --> " << lTargetPath.c_str() << "\n";
         if( !CopyFileA( lSourcePath.c_str(), lTargetPath.c_str(), FALSE ) )
         {
-            return eError_FailedToCreateFile;
+            return eError_FailedToCopyFile;
         }
 
         return eError_NoError;
@@ -277,14 +332,14 @@ eError Pack( std::deque< std::string >& laParams )
 
 void PrintUsage()
 {
-    std::cout << "Usage: Modulate.exe <options> <command>\n\n";
+    std::cout << "Usage: Modulate.exe <options> <commands>\n\n";
     std::cout << "Options:\n";
-    std::cout << "-verbose\t\t\tShow additional information during operation\n";
-    std::cout << "-force\t\t\t\tOverwrite existing files\n";
+    std::cout << "-verbose\tShow additional information during operation\n";
+    std::cout << "-force\t\tOverwrite existing files\n";
     std::cout << "\nCommands:\n";
-    std::cout << "-unpack <out_dir>\t\tUnpack the contents of the .ark file(s) to <out_dir>\n";
-    std::cout << "-replace <old_song> <new_song>\tReplace the song in the <old_song> folder with the song in <new_song>.\n\t\t\t\tRequires <new_song.mid> <new_song.mogg> <new_song.moggsong>\n";
-    std::cout << "-pack <in_dir> <out_dir>\tRepack data into an .ark file\n";
+    std::cout << "-unpack <out_dir>\t\t\t\tUnpack the contents of the .ark file(s) to <out_dir>\n";
+    std::cout << "-pack <in_dir> <out_dir>\t\t\tRepack data into an .ark file\n";
+    std::cout << "-replace <data_dir> <old_song> <new_song>\tReplace <old_song> with the song from <new_song>\n\t\t\t\t\t\tRequires <new_song.mid> <new_song.mogg> <new_song.moggsong>\n";
 }
 
 int main( int argc, char *argv[], char *envp[] )

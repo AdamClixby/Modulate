@@ -13,6 +13,7 @@ enum eError {
     eError_NoData,
     eError_FailedToCreateFile,
     eError_FailedToDeleteFile,
+    eError_FailedToCopyFile,
     eError_InvalidParameter,
     eError_NumTypes
 };
@@ -30,6 +31,7 @@ static void ShowError( eError leError )
         "Missing data",
         "Failed to create file",
         "Failed to delete file",
+        "Failed to copy file",
         "Invalid parameter",
     };
 
