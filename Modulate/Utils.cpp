@@ -24,8 +24,8 @@ int CUtils::GenerateFileList( const CArk& lReferenceHeader, const char* lpDirect
             std::string lArkFilename = ( strstr( lpDirectory, "/" ) + 1 ) + std::string( lFindFileData.cFileName );
             if( !lReferenceHeader.FileExists( lArkFilename.c_str() ) )
             {
-                VERBOSE_OUT( "Skipping unknown file: " << lSourceFilename.c_str() << "\n" );
-                continue;
+                //VERBOSE_OUT( "Skipping unknown file: " << lSourceFilename.c_str() << "\n" );
+                //continue;
             }
 
             FILE* lFile = nullptr;

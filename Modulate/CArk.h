@@ -52,6 +52,7 @@ private:
     struct sFileDefinition
     {
         eError InitialiseFromData( unsigned char*& lpData );
+        void CalculateHashesAndPath();
         void Serialise( unsigned char*& lpData ) const;
 
         std::string mName;

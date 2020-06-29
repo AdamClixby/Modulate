@@ -3,3 +3,4 @@
 
 bool        CSettings::mbVerbose = false;
 bool        CSettings::mbOverwriteOutputFiles = true;
+bool        CSettings::mbIgnoreNewFiles = true;

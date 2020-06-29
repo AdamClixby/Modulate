@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
+#include <algorithm>
 #include <windows.h>
 
 #include "CArk.h"
@@ -41,6 +42,7 @@ int CArk::GetNumberOfFilesIncludingDuplicates( const std::vector<std::string>& l
             if( lFilenameHash == lpFileDef->mNameHash )
             {
                 ++liNumEntries;
+                break;
             }
         }
     }
@@ -64,14 +66,12 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
     VERBOSE_OUT( "Found " << miNumFiles << " files\n" );
     
     int liNumFakes = 1;
-    int liNumDuplicates = lReferenceHeader.GetNumberOfFilesIncludingDuplicates( laFilenames ) - miNumFiles;
+    int liNumDuplicates = CSettings::mbIgnoreNewFiles ? ( lReferenceHeader.GetNumberOfFilesIncludingDuplicates( laFilenames ) - miNumFiles ) : 0;
 
     delete[] mpFiles;
     mpFiles = new sFileDefinition[ miNumFiles + liNumDuplicates + liNumFakes ];
 
     unsigned int luTotalFileSize = 0;
-
-    int liFlagToInsert = -1;
 
     sFileDefinition* lpFileDef = mpFiles;
     std::vector<std::string>::const_iterator lFilename = laFilenames.begin();
@@ -81,36 +81,62 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
 
         int jj = 0;
         const sFileDefinition* lpReferenceFile = lReferenceHeader.GetFile( lFilenameHash, jj++ );
-        while( lpReferenceFile )
+        if( !lpReferenceFile && !CSettings::mbIgnoreNewFiles )
         {
-            *lpFileDef = *lpReferenceFile;
-            lpReferenceFile = lReferenceHeader.GetFile( lFilenameHash, jj++ );
-
-            if( strstr( lpFileDef->mName.c_str(), "/config/arkbuild/" ) ||
-                ( strstr( lpFileDef->mName.c_str(), ".moggsong" ) && !strstr( lpFileDef->mName.c_str(), ".moggsong_dta_ps3" ) ) )
-            {
-                lpFileDef->miSize = 0;
-                ++lpFileDef;
-                continue;
-            }
-
             FILE* lFile = nullptr;
-            std::string lSourceFilename = lpInputDirectory + lpFileDef->mName;
+            std::string lSourceFilename = lpInputDirectory + *lFilename;
             fopen_s( &lFile, lSourceFilename.c_str(), "rb" );
             if( !lFile )
             {
-                std::cout << "Unable to open file: " << lSourceFilename.c_str() << "\n";
+                std::cout << "Unable to open file: " << (*lFilename).c_str() << "\n";
                 ++lpFileDef;
                 continue;
             }
 
+            lpFileDef->mName = *lFilename;
             fseek( lFile, 0, SEEK_END );
             lpFileDef->miSize = ftell( lFile );
             fclose( lFile );
 
+            lpFileDef->CalculateHashesAndPath();
+
             luTotalFileSize += lpFileDef->miSize;
 
             ++lpFileDef;
+        }
+        else
+        {
+            if( lpReferenceFile )
+            {
+                *lpFileDef = *lpReferenceFile;
+                lpReferenceFile = lReferenceHeader.GetFile( lFilenameHash, jj++ );
+
+                if( strstr( lpFileDef->mName.c_str(), "/config/arkbuild/" ) ||
+                    ( strstr( lpFileDef->mName.c_str(), ".moggsong" ) && !strstr( lpFileDef->mName.c_str(), ".moggsong_dta_ps3" ) ) )
+                {
+                    lpFileDef->miSize = 0;
+                    ++lpFileDef;
+                    continue;
+                }
+
+                FILE* lFile = nullptr;
+                std::string lSourceFilename = lpInputDirectory + lpFileDef->mName;
+                fopen_s( &lFile, lSourceFilename.c_str(), "rb" );
+                if( !lFile )
+                {
+                    std::cout << "Unable to open file: " << lSourceFilename.c_str() << "\n";
+                    ++lpFileDef;
+                    continue;
+                }
+
+                fseek( lFile, 0, SEEK_END );
+                lpFileDef->miSize = ftell( lFile );
+                fclose( lFile );
+
+                luTotalFileSize += lpFileDef->miSize;
+
+                ++lpFileDef;
+            }
         }
     }
 
@@ -538,6 +564,13 @@ eError CArk::sFileDefinition::InitialiseFromData( unsigned char*& lpData )
         return eError_InvalidData;
     }
 
+    CalculateHashesAndPath();
+
+    return eError_NoError;
+}
+
+void CArk::sFileDefinition::CalculateHashesAndPath()
+{
     mNameHash = std::hash< std::string >{}( mName );
 
     int liNameLength = (int)mName.length();
@@ -567,8 +600,6 @@ eError CArk::sFileDefinition::InitialiseFromData( unsigned char*& lpData )
     mPathBreakdown.push_back( std::string( lpFolder ) );
 
     delete[] lpNameCopy;
-
-    return eError_NoError;
 }
 
 void CArk::sFileDefinition::Serialise( unsigned char *& lpData ) const
@@ -604,7 +635,7 @@ void CArk::sFileDefinition::Serialise( unsigned char *& lpData ) const
     WriteString( mName );
     WriteInt( miFlags1 );
     WriteUInt( miSize );
-    WriteUInt( 0 );      // Don't need to save hashes
+    WriteUInt( miSize ? 0x7D401F60 : 0 );
 }
 
 eError CArk::LoadArkData()
@@ -646,11 +677,6 @@ eError CArk::LoadArkData()
 
 eError CArk::BuildArk( const char* lpInputDirectory )
 {
-    if( mpArkData )
-    {
-        delete[] mpArkData;
-    }
-
     VERBOSE_OUT( "Building ark\n" );
 
     unsigned int luTotalArkSize = 0;
@@ -667,26 +693,8 @@ eError CArk::BuildArk( const char* lpInputDirectory )
     char* lpArkPtr = mpArkData + 1;
 
     lpFileDef = mpFiles;
-    for( int ii = 0; ii < miNumFiles; ++ii,++lpFileDef )
-    
-    //lpFileDef = mpFiles + miNumFiles - 1;
-    //for( int ii = miNumFiles - 1; ii >= 0; --ii, --lpFileDef )
-    //
-    //std::vector< sFileDefinition* > lapFiles;
-    //lapFiles.reserve( miNumFiles );
-
-    //lpFileDef = mpFiles;
-    //for( int ii = 0; ii < miNumFiles; ++ii, ++lpFileDef )
-    //{
-    //    lapFiles.push_back( lpFileDef );
-    //}
-
-    //while( !lapFiles.empty() )
+    for( int ii = 0; ii < miNumFiles; ++ii, ++lpFileDef )
     {
-        //int liEntry = rand() % lapFiles.size();
-        //lpFileDef = lapFiles[ liEntry ];
-        //lapFiles.erase( lapFiles.begin() + liEntry );
-
         if( lpFileDef->miSize == 0 )
         {
             continue;
@@ -717,6 +725,19 @@ eError CArk::BuildArk( const char* lpInputDirectory )
 
 eError CArk::SaveArk( const char* lpOutputDirectory, const char* lpHeaderFilename ) const
 {
+    auto lCalculateFileHash = [&]( const std::string& lFilename )
+    {
+        int liHash = 0;
+        const char* lpChar = lFilename.c_str();
+        do
+        {
+            liHash = ( liHash * 0x7F ) + *lpChar;
+            liHash -= ( ( liHash / miNumFiles ) * miNumFiles );
+        } while( *(++lpChar) );
+
+        return liHash;
+    };
+
     auto lSaveArk = [&]()
     {
         const char* lpArkPtr = mpArkData;
@@ -825,101 +846,76 @@ eError CArk::SaveArk( const char* lpOutputDirectory, const char* lpHeaderFilenam
         *(int*)lpHeaderPtr = miNumFiles;
         lpHeaderPtr += sizeof( int );
 
-        const sFileDefinition* lpFile = mpFiles;
+        std::vector< std::pair< int, sFileDefinition* > > lHashes;
+
+        sFileDefinition* lpFile = mpFiles;
         for( int ii = 0; ii < miNumFiles; ++ii, ++lpFile )
         {
-            lpFile->Serialise( lpHeaderPtr );
+            int liHash = lCalculateFileHash( lpFile->mName );
+            lHashes.push_back( std::pair< int, sFileDefinition* >( liHash, lpFile ) );
         }
 
-        sIntList* lpFileFlags2 = (sIntList*)lpHeaderPtr;
-        lpFileFlags2->miNum = miNumFiles;
-    
-        lpFile = mpFiles;
-        for( int ii = 0; ii < miNumFiles; ++ii, ++lpFile )
+        std::sort( lHashes.begin(), lHashes.end(), []( auto& lA, auto& lB ) {
+            if( lA.first < lB.first )
+            {
+                return true;
+            }
+            else if( lB.first < lA.first )
+            {
+                return false;
+            }
+
+            return lA.second < lB.second;
+        } );
+
+        std::vector< std::pair< int, int > > lHashOffsets;
+
         {
-            lpFileFlags2->SetValue( ii, lpFile->miFlags2 );
+            int liEntryIndex = -1;
+            int liPreviousHashIndex = -1;
+
+            std::vector< std::pair< int, sFileDefinition* > >::iterator lEntry = lHashes.begin();
+            while( lEntry != lHashes.end() )
+            {
+                int liHash = lEntry->first;
+
+                lEntry->second->miFlags1 = liPreviousHashIndex;
+                lEntry->second->Serialise( lpHeaderPtr );
+                liPreviousHashIndex = ++liEntryIndex;
+
+                ++lEntry;
+                if( lEntry == lHashes.end() )
+                {
+                    lHashOffsets.push_back( { liHash, liEntryIndex } );
+                    break;
+                }
+
+                if( lEntry->first != liHash )
+                {
+                    lHashOffsets.push_back( { liHash, liEntryIndex } );
+                    liHash = lEntry->first;
+                }
+            }
         }
 
-        lpHeaderPtr += lpFileFlags2->GetDataSize();
-        
-        //lpFile = mpFiles;
-        //for( int ii = 0; ii < miNumFiles; ++ii, ++lpFile )
-        //{
-        //    std::cout << ii << ":\t" << lpFile->miFlags1 << "\t" << lpFile->miFlags2 << "\t" << lpFile->mName.c_str() << "\n";
-        //}
-        //std::cout << "\n\n";
+        *(int*)lpHeaderPtr = miNumFiles;
+        lpHeaderPtr += sizeof( int );
 
-        //{
-        //    int liVal = -1;
-        //    for( ; liVal < miNumFiles; )
-        //    {
-        //        lpFile = mpFiles;
-        //        for( int ii = 0; ii < miNumFiles; ++ii, ++lpFile )
-        //        {
-        //            if( (liVal == -1 && lpFile->miFlags1 == liVal && lpFile->miFlags2 == liVal ) ||
-        //                ( liVal != -1 && ( lpFile->miFlags1 == liVal || lpFile->miFlags2 == liVal ) ) )
-        //            {
-        //                std::cout << "\t" << ii << "\t" << lpFile->miFlags1 << "\t" << lpFile->miFlags2 << "\t" << lpFile->mName.c_str() << "\n";
-        //            }
-        //        }
-        //        ++liVal;
-        //    }
-        //}
-        //std::cout << "\n\n";
+        for( int ii = 0; ii < miNumFiles; ++ii )
+        {
+            int liEntryIndex = -1;
+            for( auto lFind : lHashOffsets )
+            {
+                if( lFind.first == ii )
+                {
+                    liEntryIndex = lFind.second;
+                    break;
+                }
+            }
 
-        //int liNumOutput = 0;
-        //int liPreviousLowestFlags = -10000;
-        //for( ; liNumOutput < miNumFiles; )
-        //{
-        //    int liLowestFlags = INT_MAX;
-        //    for( int jj = 0; jj < miNumFiles; ++jj )
-        //    {
-        //        const sFileDefinition* lpFileDef = &mpFiles[ jj ];
-        //        if( lpFileDef->miFlags1 < liLowestFlags &&
-        //            lpFileDef->miFlags1 > liPreviousLowestFlags )
-        //        {
-        //            liLowestFlags = lpFileDef->miFlags1;
-        //        }
-        //    }
-        //    for( int jj = 0; jj < miNumFiles; ++jj )
-        //    {
-        //        const sFileDefinition* lpFileDef = &mpFiles[ jj ];
-        //        if( lpFileDef->miFlags1 == liLowestFlags )
-        //        {
-        //            ++liNumOutput;
-        //            std::cout << jj << ":\t"  << lpFileDef->miFlags1 << "\t" << lpFileDef->miFlags2 << "\t" << lpFileDef->mName.c_str() << "\n";
-        //        }
-        //    }
-        //    liPreviousLowestFlags = liLowestFlags;
-        //}
-
-        //std::cout << "\n\n";
-
-        //liNumOutput = 0;
-        //liPreviousLowestFlags = -10000;
-        //for( ; liNumOutput < miNumFiles; )
-        //{
-        //    int liLowestFlags = INT_MAX;
-        //    for( int jj = 0; jj < miNumFiles; ++jj )
-        //    {
-        //        const sFileDefinition* lpFileDef = &mpFiles[ jj ];
-        //        if( lpFileDef->miFlags2 < liLowestFlags &&
-        //            lpFileDef->miFlags2 > liPreviousLowestFlags )
-        //        {
-        //            liLowestFlags = lpFileDef->miFlags2;
-        //        }
-        //    }
-        //    for( int jj = 0; jj < miNumFiles; ++jj )
-        //    {
-        //        const sFileDefinition* lpFileDef = &mpFiles[ jj ];
-        //        if( lpFileDef->miFlags2 == liLowestFlags )
-        //        {
-        //            ++liNumOutput;
-        //            std::cout << jj << ":\t" << lpFileDef->miFlags1 << "\t" << lpFileDef->miFlags2 << "\t" << lpFileDef->miSize << "\t" << lpFileDef->mName.c_str() << "\n";
-        //        }
-        //    }
-        //    liPreviousLowestFlags = liLowestFlags;
-        //}
+            *(int*)lpHeaderPtr = liEntryIndex;
+            lpHeaderPtr += sizeof( int );
+        }
 
         int liHeaderDataSize = (int)( lpHeaderPtr - lacHeaderData );
 
