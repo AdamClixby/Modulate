@@ -60,7 +60,7 @@ eError BuildSingleSong( std::deque< std::string >& laParams )
     laParams.pop_front();
     std::cout << lSongName.c_str() << "\n";
 
-    std::string lFilename = lDirectory + "ps3/songs/" + lSongName + "/" + lSongName + ".moggsong";
+    std::string lFilename = lDirectory + CSettings::msPlatform + "/songs/" + lSongName + "/" + lSongName + ".moggsong";
 
     CDtaFile lDataFile;
     eError leError = lDataFile.LoadMoggSong( lFilename.c_str() );
@@ -69,14 +69,14 @@ eError BuildSingleSong( std::deque< std::string >& laParams )
     lDataFile.SetMoggPath( lSongName + ".mogg" );
     lDataFile.SetMidiPath( lSongName + ".mid" );
 
-    std::string lOutFilename = lFilename + "_dta_ps3";
+    std::string lOutFilename = lFilename + "_dta_" + CSettings::msPlatform;
 
     leError = lDataFile.Save( lOutFilename.c_str() );
     SHOW_ERROR_AND_RETURN;
 
     int liMidiBPM = (int)roundf( 60000000.0f / lDataFile.GetBPM() );
 
-    std::string lMidiFilename = lDirectory + "ps3/songs/" + lSongName + "/" + lSongName + ".mid_ps3";
+    std::string lMidiFilename = lDirectory + CSettings::msPlatform + "/songs/" + lSongName + "/" + lSongName + ".mid_" + CSettings::msPlatform;
     FILE* lpMidiFile = nullptr;
     fopen_s( &lpMidiFile, lMidiFilename.c_str(), "rb" );
     if( !lpMidiFile )
@@ -92,10 +92,18 @@ eError BuildSingleSong( std::deque< std::string >& laParams )
     fread( lpMidiData, liMidiFileSize, 1, lpMidiFile );
     fclose( lpMidiFile );
 
-    lpMidiData[ 0x2A ] = ( liMidiBPM >> 16 ) & 0xFF;
-    lpMidiData[ 0x2B ] = ( liMidiBPM >>  8 ) & 0xFF;
-    lpMidiData[ 0x2C ] = ( liMidiBPM >>  0 ) & 0xFF;
+    if( CSettings::mbPS4 )
+    {
+    }
+    else
+    {
+        // Is this necessary?
+        lpMidiData[ 0x2A ] = ( liMidiBPM >> 16 ) & 0xFF;
+        lpMidiData[ 0x2B ] = ( liMidiBPM >> 8 ) & 0xFF;
+        lpMidiData[ 0x2C ] = ( liMidiBPM >> 0 ) & 0xFF;
+    }
 
+    int64_t lTerminator = CSettings::mbPS4 ? 0x01abcdabcdabcdab : 0xcdabcdabcdabcdab;
     unsigned char* lpDataPtr = lpMidiData + liMidiFileSize - 1024;
     do
     {
@@ -109,12 +117,23 @@ eError BuildSingleSong( std::deque< std::string >& laParams )
         {
             return eError_InvalidData;
         }
-    } while( *(int64_t*)lpDataPtr != 0xcdabcdabcdabcdab );
+    } while( lpDataPtr >= lpMidiData && *(int64_t*)lpDataPtr != lTerminator );
 
-    lpDataPtr += 21;
-    lpDataPtr[ 0 ] = ( liMidiBPM >> 16 ) & 0xFF;
-    lpDataPtr[ 1 ] = ( liMidiBPM >>  8 ) & 0xFF;
-    lpDataPtr[ 2 ] = ( liMidiBPM >>  0 ) & 0xFF;
+    lpDataPtr += 19;
+    if( CSettings::mbPS4 )
+    {
+        lpDataPtr[ 0 ] = ( liMidiBPM >> 0 ) & 0xFF;
+        lpDataPtr[ 1 ] = ( liMidiBPM >> 8 ) & 0xFF;
+        lpDataPtr[ 2 ] = ( liMidiBPM >> 16 ) & 0xFF;
+    }
+    else
+    {
+        lpDataPtr += 2;
+
+        lpDataPtr[ 0 ] = ( liMidiBPM >> 16 ) & 0xFF;
+        lpDataPtr[ 1 ] = ( liMidiBPM >> 8 ) & 0xFF;
+        lpDataPtr[ 2 ] = ( liMidiBPM >> 0 ) & 0xFF;
+    }
 
     std::cout << "Writing " << lMidiFilename.c_str() << "\n";
 
@@ -147,10 +166,11 @@ eError BuildSongs( std::deque< std::string >& laParams )
     {
         lDirectory += '/';
     }
-    std::cout << lDirectory.c_str() << "ps3/songs/\n";
+    std::cout << lDirectory.c_str() << CSettings::msPlatform << "/songs/\n";
 
     CArk lReferenceArkHeader;
-    eError leError = lReferenceArkHeader.Load( "main_ps3.hdr" );
+    std::string lHeaderFilename = std::string( "main_" ).append( CSettings::msPlatform ).append( ".hdr" );
+    eError leError = lReferenceArkHeader.Load( lHeaderFilename.c_str() );
     SHOW_ERROR_AND_RETURN;
 
     std::vector< std::string > laFilenames;
@@ -201,7 +221,7 @@ eError BuildSongs( std::deque< std::string >& laParams )
 
 eError Unpack( std::deque< std::string >& laParams )
 {
-    std::cout << "Unpacking main_ps3.hdr to ";
+    std::cout << "Unpacking main_ps4.hdr to ";
     if( laParams.empty() )
     {
         return eError_InvalidParameter;
@@ -217,7 +237,7 @@ eError Unpack( std::deque< std::string >& laParams )
     }
 
     CArk lArkHeader;
-    eError leError = lArkHeader.Load( "main_ps3.hdr" );
+    eError leError = lArkHeader.Load( "main_ps4.hdr" );
     SHOW_ERROR_AND_RETURN;
 
     leError = lArkHeader.ExtractFiles( 0, lArkHeader.GetNumFiles(), lOutputDirectory.c_str() );
@@ -258,8 +278,8 @@ eError ReplaceSong( std::deque< std::string >& laParams )
 
     std::cout << lNewSong.c_str() << "\n";
 
-    std::string lSourcePathBase = lBasePath + "ps3/songs/" + lNewSong + "/" + lNewSong;
-    std::string lTargetPathBase = lBasePath + "ps3/songs/" + lOldSong + "/" + lOldSong;
+    std::string lSourcePathBase = lBasePath + CSettings::msPlatform + "/songs/" + lNewSong + "/" + lNewSong;
+    std::string lTargetPathBase = lBasePath + CSettings::msPlatform + "/songs/" + lOldSong + "/" + lOldSong;
 
     auto lCopyFile = [ & ]( const char* lpExtension )
     {
@@ -289,7 +309,7 @@ eError ReplaceSong( std::deque< std::string >& laParams )
 
 eError Pack( std::deque< std::string >& laParams )
 {
-    std::cout << "Packing main_ps3.hdr from ";
+    std::cout << "Packing main_ps4.hdr from ";
     if( laParams.empty() )
     {
         return eError_InvalidParameter;
@@ -317,7 +337,7 @@ eError Pack( std::deque< std::string >& laParams )
     }
 
     CArk lReferenceArkHeader;
-    eError leError = lReferenceArkHeader.Load( "main_ps3.hdr" );
+    eError leError = lReferenceArkHeader.Load( "main_ps4.hdr" );
     SHOW_ERROR_AND_RETURN;
 
     CArk lArkHeader;
@@ -325,7 +345,7 @@ eError Pack( std::deque< std::string >& laParams )
     SHOW_ERROR_AND_RETURN;
 
     lArkHeader.BuildArk( lInputPath.c_str() );
-    lArkHeader.SaveArk( lOuptutPath.c_str(), "main_ps3.hdr" );
+    lArkHeader.SaveArk( lOuptutPath.c_str(), "main_ps4.hdr" );
 
     return eError_NoError;
 }

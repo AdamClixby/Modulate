@@ -5,6 +5,9 @@
 class CSettings
 {
 public:
+    static bool mbPS4;
+    static const char* msPlatform;
+
     static bool mbVerbose;
     static bool mbOverwriteOutputFiles;
     static bool mbIgnoreNewFiles;

@@ -112,7 +112,7 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
                 lpReferenceFile = lReferenceHeader.GetFile( lFilenameHash, jj++ );
 
                 if( strstr( lpFileDef->mName.c_str(), "/config/arkbuild/" ) ||
-                    ( strstr( lpFileDef->mName.c_str(), ".moggsong" ) && !strstr( lpFileDef->mName.c_str(), ".moggsong_dta_ps3" ) ) )
+                    ( strstr( lpFileDef->mName.c_str(), ".moggsong" ) && !strstr( lpFileDef->mName.c_str(), ".moggsong_dta_" ) ) )
                 {
                     lpFileDef->miSize = 0;
                     ++lpFileDef;
