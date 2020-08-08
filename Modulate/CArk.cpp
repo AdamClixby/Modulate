@@ -255,15 +255,22 @@ eError CArk::Load( const char* lpHeaderFilename )
     VERBOSE_OUT( "\nLoaded header (" << liHeaderSize << ") bytes\n" );
 
     unsigned int luVersion = *(unsigned int*)( lpHeaderData );
-    const unsigned int kuEncryptedVersion = 0xc64eed30;
-    if( luVersion != kuEncryptedVersion )
+    const unsigned int kuEncryptedVersionPS3 = 0xc64eed30;
+    const unsigned int kuEncryptedVersionPS4 = 0x6f303f55;
+    if( luVersion != kuEncryptedVersionPS3 &&
+        luVersion != kuEncryptedVersionPS4 )
     {
         delete[] lpHeaderData;
         return eError_UnknownVersionNumber;
     }
 
+    const unsigned int kuEncryptedPS3Key = 0xc64eed30;
+    const unsigned int kuEncryptedPS4Key = 0x90cfc0ab;
+
+    const unsigned int kuInitialKey = ( luVersion == kuEncryptedVersionPS3 ) ? kuEncryptedPS3Key : kuEncryptedPS4Key;
+
     CEncryptionCycler lDecrypt;
-    lDecrypt.Cycle( lpHeaderData + sizeof( unsigned int ), liHeaderSize - sizeof( unsigned int ), *(int*)lpHeaderData );
+    lDecrypt.Cycle( lpHeaderData + sizeof( unsigned int ), liHeaderSize - sizeof( unsigned int ), kuInitialKey );
 
     unsigned char* lpHeaderPtr = lpHeaderData + sizeof( unsigned int );
     const sHeaderBase* lpHeaderBase = (const sHeaderBase*)lpHeaderPtr;
