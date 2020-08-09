@@ -142,6 +142,19 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
 
     miNumFiles += liNumDuplicates;
 
+    SortFiles();
+
+    miNumArks = 1;
+
+    delete[] mpArks;
+    mpArks = new sArkDefinition[ 1 ];
+    mpArks->mPath = lReferenceHeader.mpArks[ 0 ].mPath;
+
+    return eError_NoError;
+}
+
+void CArk::SortFiles()
+{
     auto lFileDefinitionSort = []( const void* a, const void* b )
     {
         const sFileDefinition* lpA = (const sFileDefinition*)a;
@@ -217,14 +230,6 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
     };
 
     std::qsort( mpFiles, miNumFiles, sizeof( sFileDefinition ), lFileDefinitionSort );
-
-    miNumArks = 1;
-
-    delete[] mpArks;
-    mpArks = new sArkDefinition[ 1 ];
-    mpArks->mPath = lReferenceHeader.mpArks[ 0 ].mPath;
-
-    return eError_NoError;
 }
 
 eError CArk::Load( const char* lpHeaderFilename )
@@ -255,19 +260,14 @@ eError CArk::Load( const char* lpHeaderFilename )
     VERBOSE_OUT( "\nLoaded header (" << liHeaderSize << ") bytes\n" );
 
     unsigned int luVersion = *(unsigned int*)( lpHeaderData );
-    const unsigned int kuEncryptedVersionPS3 = 0xc64eed30;
-    const unsigned int kuEncryptedVersionPS4 = 0x6f303f55;
-    if( luVersion != kuEncryptedVersionPS3 &&
-        luVersion != kuEncryptedVersionPS4 )
+    if( luVersion != CSettings::kuEncryptedVersionPS3 &&
+        luVersion != CSettings::kuEncryptedVersionPS4 )
     {
         delete[] lpHeaderData;
         return eError_UnknownVersionNumber;
     }
 
-    const unsigned int kuEncryptedPS3Key = 0xc64eed30;
-    const unsigned int kuEncryptedPS4Key = 0x90cfc0ab;
-
-    const unsigned int kuInitialKey = ( luVersion == kuEncryptedVersionPS3 ) ? kuEncryptedPS3Key : kuEncryptedPS4Key;
+    const unsigned int kuInitialKey = ( luVersion == CSettings::kuEncryptedVersionPS3 ) ? CSettings::kuEncryptedPS3Key : CSettings::kuEncryptedPS4Key;
 
     CEncryptionCycler lDecrypt;
     lDecrypt.Cycle( lpHeaderData + sizeof( unsigned int ), liHeaderSize - sizeof( unsigned int ), kuInitialKey );
@@ -348,6 +348,8 @@ eError CArk::Load( const char* lpHeaderFilename )
         eError leError = lpFileFlags2->GetValue( ii, lpFile->miFlags2 );
         SHOW_ERROR_AND_RETURN_W( delete[] lpHeaderData );
     }
+
+    //SortFiles();
 
     delete[] lpHeaderData;
     return eError_NoError;
@@ -642,7 +644,8 @@ void CArk::sFileDefinition::Serialise( unsigned char *& lpData ) const
     WriteString( mName );
     WriteInt( miFlags1 );
     WriteUInt( miSize );
-    WriteUInt( miSize ? 0x7D401F60 : 0 );
+    WriteUInt( miSize ? 0xDDB682F0 : 0 );
+    //WriteUInt( miSize ? 0x7D401F60 : 0 );
 }
 
 eError CArk::LoadArkData()
@@ -749,7 +752,7 @@ eError CArk::SaveArk( const char* lpOutputDirectory, const char* lpHeaderFilenam
     {
         const char* lpArkPtr = mpArkData;
         const sArkDefinition* lpArkDef = mpArks;
-        for( int ii = 0; ii < miNumArks; ++ii )
+        for( int ii = 0; ii < miNumArks; ++ii, ++lpArkDef )
         {
             std::string lFilename = lpOutputDirectory + lpArkDef->mPath;
             FILE* lpOutputFile = nullptr;
@@ -808,7 +811,7 @@ eError CArk::SaveArk( const char* lpOutputDirectory, const char* lpHeaderFilenam
         const int kiMaxHeaderSize = 512 * 1024;
         unsigned char lacHeaderData[ kiMaxHeaderSize ];
 
-        const unsigned int kuEncryptedVersion = 0xc64eed30;
+        const unsigned int kuEncryptedVersion = CSettings::mbPS4 ? CSettings::kuEncryptedVersionPS4 : CSettings::kuEncryptedVersionPS3;
         *(unsigned int*)( lacHeaderData ) = kuEncryptedVersion;
 
         unsigned char* lpHeaderPtr = lacHeaderData + ( 1 * sizeof( unsigned int ) );
@@ -862,23 +865,101 @@ eError CArk::SaveArk( const char* lpOutputDirectory, const char* lpHeaderFilenam
             lHashes.push_back( std::pair< int, sFileDefinition* >( liHash, lpFile ) );
         }
 
-        std::sort( lHashes.begin(), lHashes.end(), []( auto& lA, auto& lB ) {
-            if( lA.first < lB.first )
-            {
+        if( CSettings::mbPS4 )
+        {
+            std::sort( lHashes.begin(), lHashes.end(), []( auto& lA, auto& lB ) {
+                const sFileDefinition* lpA = lA.second;
+                const sFileDefinition* lpB = lB.second;
+
+                if( lpA->mNameHash == 0 )
+                {
+                    if( lpB->mNameHash == 0 )
+                    {
+                        return true;
+                    }
+                    return false;
+                }
+                else if( lpB->mNameHash == 0 )
+                {
+                    return true;
+                }
+
+                int liAIndex = 0;
+                int liBIndex = 0;
+
+                int liLoopLimit = 16;
+                while( --liLoopLimit )
+                {
+                    if( liAIndex + 1 == lpA->mPathBreakdown.size() )
+                    {
+                        if( liBIndex + 1 != lpB->mPathBreakdown.size() )
+                        {
+                            return true;
+                        }
+                    }
+                    else if( liBIndex + 1 == lpB->mPathBreakdown.size() )
+                    {
+                        return false;
+                    }
+
+                    const std::string& lpAName = lpA->mPathBreakdown[ liAIndex ];
+                    const std::string& lpBName = lpB->mPathBreakdown[ liBIndex ];
+                    int liComparisonResult = _stricmp( lpAName.c_str(), lpBName.c_str() );
+                    if( liComparisonResult != 0 )
+                    {
+                        return liComparisonResult > 0 ? false : true;
+                    }
+
+                    ++liAIndex;
+                    ++liBIndex;
+
+                    if( liAIndex == lpA->mPathBreakdown.size() )
+                    {
+                        if( lpA->miFlags1 < lpB->miFlags1 )
+                        {
+                            return true;
+                        }
+                        else if( lpA->miFlags1 > lpB->miFlags1 )
+                        {
+                            return false;
+                        }
+
+                        if( lpA->miFlags2 < lpB->miFlags2 )
+                        {
+                            return true;
+                        }
+                        else if( lpA->miFlags2 > lpB->miFlags2 )
+                        {
+                            return false;
+                        }
+
+                        return true;
+                    }
+                }
+
                 return true;
-            }
-            else if( lB.first < lA.first )
-            {
-                return false;
-            }
+            } );
+        }
+        else
+        {
+            std::sort( lHashes.begin(), lHashes.end(), []( auto& lA, auto& lB ) {
+                if( lA.first < lB.first )
+                {
+                    return true;
+                }
+                else if( lB.first < lA.first )
+                {
+                    return false;
+                }
 
-            return lA.second < lB.second;
-        } );
-
+                return lA.second < lB.second;
+            } );
+        }
+        
         std::vector< std::pair< int, int > > lHashOffsets;
 
         {
-            int liEntryIndex = -1;
+            int liEntryIndex = 0;
             int liPreviousHashIndex = -1;
 
             std::vector< std::pair< int, sFileDefinition* > >::iterator lEntry = lHashes.begin();
@@ -886,9 +967,25 @@ eError CArk::SaveArk( const char* lpOutputDirectory, const char* lpHeaderFilenam
             {
                 int liHash = lEntry->first;
 
-                lEntry->second->miFlags1 = liPreviousHashIndex;
+                int liFlags = -1;
+                for( auto& lIter : lHashOffsets )
+                {
+                    if( lIter.first == lEntry->first )
+                    {
+                        liFlags = lIter.second;
+                        lIter.second = liEntryIndex;
+                        break;
+                    }
+                }
+
+                if( liPreviousHashIndex != -1 )
+                {
+                    liFlags = liPreviousHashIndex;
+                }
+                lEntry->second->miFlags1 = liFlags;
+
                 lEntry->second->Serialise( lpHeaderPtr );
-                liPreviousHashIndex = ++liEntryIndex;
+                liPreviousHashIndex = liEntryIndex;
 
                 ++lEntry;
                 if( lEntry == lHashes.end() )
@@ -900,8 +997,10 @@ eError CArk::SaveArk( const char* lpOutputDirectory, const char* lpHeaderFilenam
                 if( lEntry->first != liHash )
                 {
                     lHashOffsets.push_back( { liHash, liEntryIndex } );
-                    liHash = lEntry->first;
+                    liPreviousHashIndex = -1;
                 }
+
+                ++liEntryIndex;
             }
         }
 
@@ -927,7 +1026,7 @@ eError CArk::SaveArk( const char* lpOutputDirectory, const char* lpHeaderFilenam
         int liHeaderDataSize = (int)( lpHeaderPtr - lacHeaderData );
 
         CEncryptionCycler lDecrypt;
-        lDecrypt.Cycle( lacHeaderData + sizeof( unsigned int ), liHeaderDataSize - sizeof( unsigned int ), -967906000 );
+        lDecrypt.Cycle( lacHeaderData + sizeof( unsigned int ), liHeaderDataSize - sizeof( unsigned int ), CSettings::mbPS4 ? CSettings::kuEncryptedPS4Key : CSettings::kuEncryptedPS4Key );
 
         std::string lHeaderFilename = lpOutputDirectory + std::string( lpHeaderFilename );
    

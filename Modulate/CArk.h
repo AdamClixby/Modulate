@@ -68,7 +68,11 @@ private:
 
     int GetNumberOfFilesIncludingDuplicates( const std::vector<std::string>& laFilenames ) const;
 
+public:
     eError LoadArkData();
+
+private:
+    void SortFiles();
 
     const sFileDefinition* GetFile( size_t lFilenameHash, int liDuplicateIndex ) const;
 

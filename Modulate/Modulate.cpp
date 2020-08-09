@@ -17,6 +17,7 @@
 
 #include "CArk.h"
 #include "CDtaFile.h"
+#include "CEncryptionCycler.h"
 
 eError EnableVerbose( std::deque< std::string >& )
 {
@@ -221,7 +222,7 @@ eError BuildSongs( std::deque< std::string >& laParams )
 
 eError Unpack( std::deque< std::string >& laParams )
 {
-    std::cout << "Unpacking main_ps4.hdr to ";
+    std::cout << "Unpacking main_" << CSettings::msPlatform << ".hdr to ";
     if( laParams.empty() )
     {
         return eError_InvalidParameter;
@@ -237,7 +238,8 @@ eError Unpack( std::deque< std::string >& laParams )
     }
 
     CArk lArkHeader;
-    eError leError = lArkHeader.Load( "main_ps4.hdr" );
+    std::string lHeaderFilename = std::string( "main_" ).append( CSettings::msPlatform ).append( ".hdr" );
+    eError leError = lArkHeader.Load( lHeaderFilename.c_str() );
     SHOW_ERROR_AND_RETURN;
 
     leError = lArkHeader.ExtractFiles( 0, lArkHeader.GetNumFiles(), lOutputDirectory.c_str() );
@@ -309,7 +311,7 @@ eError ReplaceSong( std::deque< std::string >& laParams )
 
 eError Pack( std::deque< std::string >& laParams )
 {
-    std::cout << "Packing main_ps4.hdr from ";
+    std::cout << "Packing main_" << CSettings::msPlatform << ".hdr from ";
     if( laParams.empty() )
     {
         return eError_InvalidParameter;
@@ -337,15 +339,69 @@ eError Pack( std::deque< std::string >& laParams )
     }
 
     CArk lReferenceArkHeader;
-    eError leError = lReferenceArkHeader.Load( "main_ps4.hdr" );
+    std::string lHeaderFilename = std::string( "main_" ).append( CSettings::msPlatform ).append( ".hdr" );
+    eError leError = lReferenceArkHeader.Load( lHeaderFilename.c_str() );
+    lReferenceArkHeader.LoadArkData();
     SHOW_ERROR_AND_RETURN;
 
-    CArk lArkHeader;
-    leError = lArkHeader.ConstructFromDirectory( lInputPath.c_str(), lReferenceArkHeader );
-    SHOW_ERROR_AND_RETURN;
+    //CArk lArkHeader;
+    //leError = lArkHeader.ConstructFromDirectory( lInputPath.c_str(), lReferenceArkHeader );
+    //SHOW_ERROR_AND_RETURN;
 
-    lArkHeader.BuildArk( lInputPath.c_str() );
-    lArkHeader.SaveArk( lOuptutPath.c_str(), "main_ps4.hdr" );
+    //lArkHeader.BuildArk( lInputPath.c_str() );
+    //lArkHeader.SaveArk( lOuptutPath.c_str(), lHeaderFilename.c_str() );
+    lReferenceArkHeader.SaveArk( lOuptutPath.c_str(), lHeaderFilename.c_str() );
+
+    return eError_NoError;
+}
+
+eError Decode( std::deque< std::string >& laParams )
+{
+    std::string lHeaderFilename = std::string( "main_" ).append( CSettings::msPlatform ).append( ".hdr" );
+    VERBOSE_OUT( "Loading header file " << lHeaderFilename.c_str() );
+
+    const unsigned int kuUnencryptedVersion = 9;
+    FILE* lpHeaderFile = nullptr;
+    fopen_s( &lpHeaderFile, lHeaderFilename.c_str(), "rb" );
+    if( !lpHeaderFile )
+    {
+        return eError_FailedToOpenFile;
+    }
+
+    fseek( lpHeaderFile, 0, SEEK_END );
+    unsigned int liHeaderSize = ftell( lpHeaderFile );
+    unsigned char* lpHeaderData = new unsigned char[ liHeaderSize ];
+
+    fseek( lpHeaderFile, 0, SEEK_SET );
+    fread( lpHeaderData, liHeaderSize, 1, lpHeaderFile );
+    fclose( lpHeaderFile );
+
+    VERBOSE_OUT( "\nLoaded header (" << liHeaderSize << ") bytes\n" );
+
+    unsigned int luVersion = *(unsigned int*)( lpHeaderData );
+    if( luVersion != CSettings::kuEncryptedVersionPS3 &&
+        luVersion != CSettings::kuEncryptedVersionPS4 )
+    {
+        delete[] lpHeaderData;
+        return eError_UnknownVersionNumber;
+    }
+
+    const unsigned int kuInitialKey = ( luVersion == CSettings::kuEncryptedVersionPS3 ) ? CSettings::kuEncryptedPS3Key : CSettings::kuEncryptedPS4Key;
+
+    CEncryptionCycler lDecrypt;
+    lDecrypt.Cycle( lpHeaderData + sizeof( unsigned int ), liHeaderSize - sizeof( unsigned int ), kuInitialKey );
+
+    lHeaderFilename.append( ".dec" );
+    fopen_s( &lpHeaderFile, lHeaderFilename.c_str(), "wb" );
+    if( !lpHeaderFile )
+    {
+        delete[] lpHeaderData;
+        return eError_FailedToCreateFile;
+    }
+    fwrite( lpHeaderData, 1, liHeaderSize, lpHeaderFile );
+    fclose( lpHeaderFile );
+
+    delete[] lpHeaderData;
 
     return eError_NoError;
 }
@@ -377,6 +433,7 @@ int main( int argc, char *argv[], char *envp[] )
         "-buildsong",   BuildSingleSong,
         "-buildsongs",  BuildSongs,
         "-pack",        Pack,
+        "-decode",      Decode,
         nullptr,        nullptr,
     };
 
