@@ -8,10 +8,14 @@
 
 #include "CArk.h"
 
+#include "assert.h"
+
 #include "Error.h"
 #include "Settings.h"
 #include "Utils.h"
 #include "CEncryptionCycler.h"
+
+const unsigned int kuMaxArkSize = 1024 * 1024 * 512;
 
 CArk::CArk()
 {
@@ -56,7 +60,6 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
     laFilenames.reserve( lReferenceHeader.miNumFiles );
 
     miNumFiles = CUtils::GenerateFileList( lReferenceHeader, lpInputDirectory, laFilenames );
-
     if( miNumFiles <= 0 )
     {
         eError leError = eError_NoData;
@@ -67,6 +70,11 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
     
     int liNumFakes = 1;
     int liNumDuplicates = CSettings::mbIgnoreNewFiles ? ( lReferenceHeader.GetNumberOfFilesIncludingDuplicates( laFilenames ) - miNumFiles ) : 0;
+    
+    //if( miNumFiles < lReferenceHeader.miNumFiles )
+    //{
+    //    miNumFiles = lReferenceHeader.miNumFiles;
+    //}
 
     delete[] mpFiles;
     mpFiles = new sFileDefinition[ miNumFiles + liNumDuplicates + liNumFakes ];
@@ -74,8 +82,60 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
     unsigned int luTotalFileSize = 0;
 
     sFileDefinition* lpFileDef = mpFiles;
+
+    /*
+    std::vector< size_t > laProcessedFileHashes;
+    laProcessedFileHashes.reserve( lReferenceHeader.miNumFiles );
+    for( int ii = 0; ii < lReferenceHeader.miNumFiles; ++ii )
+    {
+        const std::string& lFilename = lReferenceHeader.mpFiles[ ii ].mName;
+        size_t lFilenameHash = std::hash< std::string >{}( lFilename );
+        if( std::find( laProcessedFileHashes.begin(), laProcessedFileHashes.end(), lFilenameHash ) != laProcessedFileHashes.end() )
+        {
+            continue;
+        }
+
+        laProcessedFileHashes.push_back( lFilenameHash );
+
+        const sFileDefinition* lpReferenceFile = lReferenceHeader.GetFile( lFilenameHash, 0 );
+
+        int jj = 1;
+        while( lpReferenceFile )
+        {
+            *lpFileDef = *lpReferenceFile;
+
+            if( strstr( lpFileDef->mName.c_str(), "/config/arkbuild/" ) ||
+                ( strstr( lpFileDef->mName.c_str(), ".moggsong" ) && !strstr( lpFileDef->mName.c_str(), ".moggsong_dta_" ) ) )
+            {
+                lpFileDef->miSize = 0;
+                ++lpFileDef;
+                continue;
+            }
+
+            FILE* lFile = nullptr;
+            std::string lSourceFilename = lpInputDirectory + lpFileDef->mName;
+            fopen_s( &lFile, lSourceFilename.c_str(), "rb" );
+            if( !lFile )
+            {
+                std::cout << "Unable to open file: " << lSourceFilename.c_str() << "\n";
+                ++lpFileDef;
+                continue;
+            }
+
+            fseek( lFile, 0, SEEK_END );
+            lpFileDef->miSize = ftell( lFile );
+            fclose( lFile );
+
+            luTotalFileSize += lpFileDef->miSize;
+
+            ++lpFileDef;
+            lpReferenceFile = lReferenceHeader.GetFile( lFilenameHash, jj++ );
+        }
+    }
+    */
+
     std::vector<std::string>::const_iterator lFilename = laFilenames.begin();
-    for( int ii = 0; ii < miNumFiles; ++ii, ++lFilename )
+    for( int ii = 0; ii < miNumFiles && lFilename != laFilenames.end(); ++ii, ++lFilename )
     {
         size_t lFilenameHash = std::hash< std::string >{}( *lFilename );
 
@@ -95,7 +155,9 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
 
             lpFileDef->mName = *lFilename;
             fseek( lFile, 0, SEEK_END );
-            lpFileDef->miSize = ftell( lFile );
+            int liNewSize = ftell( lFile );
+            assert( liNewSize == lpFileDef->miSize );
+            lpFileDef->miSize = liNewSize;
             fclose( lFile );
 
             lpFileDef->CalculateHashesAndPath();
@@ -111,14 +173,6 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
                 *lpFileDef = *lpReferenceFile;
                 lpReferenceFile = lReferenceHeader.GetFile( lFilenameHash, jj++ );
 
-                if( strstr( lpFileDef->mName.c_str(), "/config/arkbuild/" ) ||
-                    ( strstr( lpFileDef->mName.c_str(), ".moggsong" ) && !strstr( lpFileDef->mName.c_str(), ".moggsong_dta_" ) ) )
-                {
-                    lpFileDef->miSize = 0;
-                    ++lpFileDef;
-                    continue;
-                }
-
                 FILE* lFile = nullptr;
                 std::string lSourceFilename = lpInputDirectory + lpFileDef->mName;
                 fopen_s( &lFile, lSourceFilename.c_str(), "rb" );
@@ -130,7 +184,9 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
                 }
 
                 fseek( lFile, 0, SEEK_END );
-                lpFileDef->miSize = ftell( lFile );
+                int liNewSize = ftell( lFile );
+                assert( liNewSize == lpFileDef->miSize );
+                lpFileDef->miSize = liNewSize;
                 fclose( lFile );
 
                 luTotalFileSize += lpFileDef->miSize;
@@ -142,13 +198,19 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
 
     miNumFiles += liNumDuplicates;
 
-    SortFiles();
+    //SortFiles();
 
-    miNumArks = 1;
+    miNumArks = lReferenceHeader.miNumArks;
 
     delete[] mpArks;
-    mpArks = new sArkDefinition[ 1 ];
-    mpArks->mPath = lReferenceHeader.mpArks[ 0 ].mPath;
+    mpArks = new sArkDefinition[ miNumArks ];
+
+    static char laBuffer[ 6 ];
+    for( int ii = 0; ii < miNumArks; ++ii )
+    {
+        mpArks[ ii ] = lReferenceHeader.mpArks[ ii ];
+        //mpArks[ ii ].mPath = std::string( "main_" ).append( CSettings::msPlatform ).append( "_" ).append( _itoa( ii, laBuffer, 10 ) ).append( ".ark" );
+    }
 
     return eError_NoError;
 }
@@ -700,7 +762,11 @@ eError CArk::BuildArk( const char* lpInputDirectory )
 
     delete[] mpArkData;
     mpArkData = new char[ luTotalArkSize ];
-    char* lpArkPtr = mpArkData + 1;
+    char* lpArkPtr = mpArkData;
+
+    int liArkIndex = 0;
+    int liTotalSizeAllowed = mpArks[ liArkIndex ].muSize;
+    char* lpArkStartPtr = lpArkPtr;
 
     lpFileDef = mpFiles;
     for( int ii = 0; ii < miNumFiles; ++ii, ++lpFileDef )
@@ -709,6 +775,14 @@ eError CArk::BuildArk( const char* lpInputDirectory )
         {
             continue;
         }
+
+        //if( strstr( lpFileDef->mName.c_str(), "/config/arkbuild/" ) ||
+        //    ( strstr( lpFileDef->mName.c_str(), ".moggsong" ) && !strstr( lpFileDef->mName.c_str(), ".moggsong_dta_" ) ) )
+        //{
+        //    memset( mpArkData + lpFileDef->mi64Offset, 0, lpFileDef->miSize );
+        //    lpFileDef->miSize = 0;
+        //    continue;
+        //}
 
         std::string lFilename = lpInputDirectory + lpFileDef->mName;
 
@@ -720,14 +794,28 @@ eError CArk::BuildArk( const char* lpInputDirectory )
             SHOW_ERROR_AND_RETURN;
         }
 
-        lpFileDef->mi64Offset = ( lpArkPtr - mpArkData );
-        fread( lpArkPtr, lpFileDef->miSize, 1, lpInputFile );
+        fread( mpArkData + lpFileDef->mi64Offset, lpFileDef->miSize, 1, lpInputFile );
         fclose( lpInputFile );
 
-        lpArkPtr += lpFileDef->miSize;
+        //{
+        //    lpFileDef->mi64Offset = ( lpArkPtr - mpArkData );
+        //    fread( lpArkPtr, lpFileDef->miSize, 1, lpInputFile );
+        //    fclose( lpInputFile );
+
+        //    if( lpArkPtr + lpFileDef->miSize - lpArkStartPtr > liTotalSizeAllowed )
+        //    {
+        //        mpArks[ liArkIndex ].muSize = (unsigned int)( lpArkPtr - lpArkStartPtr );
+        //        liTotalSizeAllowed += kuMaxArkSize - mpArks[ liArkIndex ].muSize;
+
+        //        ++liArkIndex;
+        //        lpArkStartPtr = lpArkPtr;
+        //    }
+
+        //    lpArkPtr += lpFileDef->miSize;
+        //}
     }
 
-    mpArks[ 0 ].muSize = luTotalArkSize;
+    //mpArks[ 0 ].muSize = luTotalArkSize;
 
     VERBOSE_OUT( "Ark built\n" );
     return eError_NoError;
@@ -845,12 +933,18 @@ eError CArk::SaveArk( const char* lpOutputDirectory, const char* lpHeaderFilenam
 
         sIntList* lpArkChecksums = (sIntList*)lpHeaderPtr;
         lpArkChecksums->miNum = miNumArks;
-        lpArkChecksums->SetValue( 0, 0 );
+        for( int ii = 0; ii < miNumArks; ++ii )
+        {
+            lpArkChecksums->SetValue( ii, 0 );
+        }
         lpHeaderPtr += lpArkChecksums->GetDataSize();
 
         sIntList* lpStringCounts = (sIntList*)lpHeaderPtr;
         lpStringCounts->miNum = miNumArks;
-        lpStringCounts->SetValue( 0, 0 );
+        for( int ii = 0; ii < miNumArks; ++ii )
+        {
+            lpStringCounts->SetValue( ii, 0 );
+        }
         lpHeaderPtr += lpStringCounts->GetDataSize();
 
         *(int*)lpHeaderPtr = miNumFiles;

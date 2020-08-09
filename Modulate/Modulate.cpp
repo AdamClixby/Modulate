@@ -341,16 +341,16 @@ eError Pack( std::deque< std::string >& laParams )
     CArk lReferenceArkHeader;
     std::string lHeaderFilename = std::string( "main_" ).append( CSettings::msPlatform ).append( ".hdr" );
     eError leError = lReferenceArkHeader.Load( lHeaderFilename.c_str() );
-    lReferenceArkHeader.LoadArkData();
+    //lReferenceArkHeader.LoadArkData();
     SHOW_ERROR_AND_RETURN;
 
-    //CArk lArkHeader;
-    //leError = lArkHeader.ConstructFromDirectory( lInputPath.c_str(), lReferenceArkHeader );
-    //SHOW_ERROR_AND_RETURN;
+    CArk lArkHeader;
+    leError = lArkHeader.ConstructFromDirectory( lInputPath.c_str(), lReferenceArkHeader );
+    SHOW_ERROR_AND_RETURN;
 
-    //lArkHeader.BuildArk( lInputPath.c_str() );
-    //lArkHeader.SaveArk( lOuptutPath.c_str(), lHeaderFilename.c_str() );
-    lReferenceArkHeader.SaveArk( lOuptutPath.c_str(), lHeaderFilename.c_str() );
+    lArkHeader.BuildArk( lInputPath.c_str() );
+    lArkHeader.SaveArk( lOuptutPath.c_str(), lHeaderFilename.c_str() );
+    //lReferenceArkHeader.SaveArk( lOuptutPath.c_str(), lHeaderFilename.c_str() );
 
     return eError_NoError;
 }
