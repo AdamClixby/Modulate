@@ -418,6 +418,14 @@ void PrintUsage()
     std::cout << "-replace <data_dir> <old_song> <new_song>\tReplace <old_song> with the song from <new_song>\n\t\t\t\t\t\tRequires <new_song.mid> <new_song.mogg> <new_song.moggsong>\n";
 }
 
+eError PS3( std::deque< std::string >& laParams )
+{
+    CSettings::mbPS4 = false;
+    CSettings::msPlatform = "ps3";
+
+    return eError_NoError;
+}
+
 int main( int argc, char *argv[], char *envp[] )
 {
     struct sCommandPair
@@ -426,6 +434,7 @@ int main( int argc, char *argv[], char *envp[] )
         std::function<eError( std::deque< std::string >& )> mFunction;
     };
     const sCommandPair kaCommands[] = {
+        "-ps3",         PS3,
         "-verbose",     EnableVerbose,
         "-force",       EnableForceWrite,
         "-unpack",      Unpack,

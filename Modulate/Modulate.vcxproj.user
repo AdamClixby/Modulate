@@ -13,15 +13,15 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>
-    </LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-ps3 -pack unpacked repacked</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerWorkingDirectory>C:\Users\Adam\Desktop\Amp\Amplitude [NPUB31810]\NPUB31810\USRDIR</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerWorkingDirectory>D:\Amplitude\Amplitude [NPUB31810]\NPUB31810\USRDIR</LocalDebuggerWorkingDirectory>
+    <RemoteDebuggerCommandArguments>-ps3 -pack unpacked repacked</RemoteDebuggerCommandArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerCommandArguments>
-    </LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-ps3 -pack unpacked repacked</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerWorkingDirectory>C:\Users\Adam\Desktop\Amp\Amplitude [NPUB31810]\NPUB31810\USRDIR</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerWorkingDirectory>D:\Amplitude\Amplitude [NPUB31810]\NPUB31810\USRDIR</LocalDebuggerWorkingDirectory>
+    <RemoteDebuggerCommandArguments>-ps3 -pack unpacked repacked</RemoteDebuggerCommandArguments>
   </PropertyGroup>
 </Project>

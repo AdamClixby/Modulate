@@ -206,8 +206,6 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
 
     miNumFiles += liNumDuplicates;
 
-    //SortFiles();
-
     miNumArks = lReferenceHeader.miNumArks;
 
     delete[] mpArks;
@@ -715,8 +713,9 @@ void CArk::sFileDefinition::Serialise( unsigned char *& lpData ) const
     WriteString( mName );
     WriteInt( miFlags1 );
     WriteUInt( miSize );
-    WriteUInt( miSize ? 0xDDB682F0 : 0 );
-    //WriteUInt( miSize ? 0x7D401F60 : 0 );
+
+    unsigned int liToWrite = CSettings::mbPS4 ? 0xDDB682F0 : 0x7D401F60;
+    WriteUInt( miSize ? liToWrite : 0 );
 }
 
 eError CArk::LoadArkData()
@@ -1159,7 +1158,7 @@ eError CArk::SaveArk( const char* lpOutputDirectory, const char* lpHeaderFilenam
         int liHeaderDataSize = (int)( lpHeaderPtr - lacHeaderData );
 
         CEncryptionCycler lDecrypt;
-        lDecrypt.Cycle( lacHeaderData + sizeof( unsigned int ), liHeaderDataSize - sizeof( unsigned int ), CSettings::mbPS4 ? CSettings::kuEncryptedPS4Key : CSettings::kuEncryptedPS4Key );
+        lDecrypt.Cycle( lacHeaderData + sizeof( unsigned int ), liHeaderDataSize - sizeof( unsigned int ), CSettings::mbPS4 ? CSettings::kuEncryptedPS4Key : CSettings::kuEncryptedPS3Key );
 
         std::string lHeaderFilename = lpOutputDirectory + std::string( lpHeaderFilename );
    
