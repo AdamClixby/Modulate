@@ -173,6 +173,14 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
                 *lpFileDef = *lpReferenceFile;
                 lpReferenceFile = lReferenceHeader.GetFile( lFilenameHash, jj++ );
 
+                //if( strstr( lpFileDef->mName.c_str(), "/config/arkbuild/" ) ||
+                //    ( strstr( lpFileDef->mName.c_str(), ".moggsong" ) && !strstr( lpFileDef->mName.c_str(), ".moggsong_dta_" ) ) )
+                //{
+                //    lpFileDef->miSize = 0;
+                //    ++lpFileDef;
+                //    continue;
+                //}
+
                 FILE* lFile = nullptr;
                 std::string lSourceFilename = lpInputDirectory + lpFileDef->mName;
                 fopen_s( &lFile, lSourceFilename.c_str(), "rb" );
@@ -205,11 +213,12 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
     delete[] mpArks;
     mpArks = new sArkDefinition[ miNumArks ];
 
-    static char laBuffer[ 6 ];
+    unsigned int luSizeRemaining = luTotalFileSize;
     for( int ii = 0; ii < miNumArks; ++ii )
     {
         mpArks[ ii ] = lReferenceHeader.mpArks[ ii ];
-        //mpArks[ ii ].mPath = std::string( "main_" ).append( CSettings::msPlatform ).append( "_" ).append( _itoa( ii, laBuffer, 10 ) ).append( ".ark" );
+        mpArks[ ii ].muSize = luSizeRemaining / ( miNumArks - ii );
+        luSizeRemaining -= mpArks[ ii ].muSize;
     }
 
     return eError_NoError;
@@ -773,16 +782,9 @@ eError CArk::BuildArk( const char* lpInputDirectory )
     {
         if( lpFileDef->miSize == 0 )
         {
+            lpFileDef->mi64Offset = 0;
             continue;
         }
-
-        //if( strstr( lpFileDef->mName.c_str(), "/config/arkbuild/" ) ||
-        //    ( strstr( lpFileDef->mName.c_str(), ".moggsong" ) && !strstr( lpFileDef->mName.c_str(), ".moggsong_dta_" ) ) )
-        //{
-        //    memset( mpArkData + lpFileDef->mi64Offset, 0, lpFileDef->miSize );
-        //    lpFileDef->miSize = 0;
-        //    continue;
-        //}
 
         std::string lFilename = lpInputDirectory + lpFileDef->mName;
 
@@ -794,25 +796,62 @@ eError CArk::BuildArk( const char* lpInputDirectory )
             SHOW_ERROR_AND_RETURN;
         }
 
-        fread( mpArkData + lpFileDef->mi64Offset, lpFileDef->miSize, 1, lpInputFile );
-        fclose( lpInputFile );
+        //fread( mpArkData + lpFileDef->mi64Offset, lpFileDef->miSize, 1, lpInputFile );
+        //fclose( lpInputFile );
 
-        //{
-        //    lpFileDef->mi64Offset = ( lpArkPtr - mpArkData );
-        //    fread( lpArkPtr, lpFileDef->miSize, 1, lpInputFile );
-        //    fclose( lpInputFile );
+        {
+            lpFileDef->mi64Offset = ( lpArkPtr - mpArkData );
+            fread( lpArkPtr, lpFileDef->miSize, 1, lpInputFile );
+            fclose( lpInputFile );
 
-        //    if( lpArkPtr + lpFileDef->miSize - lpArkStartPtr > liTotalSizeAllowed )
-        //    {
-        //        mpArks[ liArkIndex ].muSize = (unsigned int)( lpArkPtr - lpArkStartPtr );
-        //        liTotalSizeAllowed += kuMaxArkSize - mpArks[ liArkIndex ].muSize;
+            lpArkPtr += lpFileDef->miSize;
+            if( lpArkPtr - lpArkStartPtr > liTotalSizeAllowed )
+            {
+                unsigned int liArkSize = (unsigned int)( lpArkPtr - lpArkStartPtr );
+                mpArks[ liArkIndex ].muSize = liArkSize;
 
-        //        ++liArkIndex;
-        //        lpArkStartPtr = lpArkPtr;
-        //    }
+                ++liArkIndex;
+                liTotalSizeAllowed += mpArks[ liArkIndex ].muSize - liArkSize;
 
-        //    lpArkPtr += lpFileDef->miSize;
-        //}
+                lpArkStartPtr = lpArkPtr;
+            }
+        }
+    }
+    mpArks[ liArkIndex ].muSize = (unsigned int)( lpArkPtr - lpArkStartPtr );
+
+    unsigned int luExistingSize = 0;
+    unsigned int luExistingOffset = 0;
+    for( int ii = 0; ii < miNumArks; ++ii )
+    {
+        unsigned int luOffset = mpArks[ ii ].muSize + luExistingOffset;
+
+        int liBoundaryFileIndex = -1;
+        for( int ff = 0; ff < miNumFiles; ++ff )
+        {
+            if( mpFiles[ ff ].mi64Offset < luOffset &&
+                mpFiles[ ff ].mi64Offset + mpFiles[ ff ].miSize > luOffset )
+            {
+                liBoundaryFileIndex = ff;
+                break;
+            }
+        }
+
+        if( liBoundaryFileIndex != -1 )
+        {
+            unsigned int luEndOffset = (unsigned int)mpFiles[ liBoundaryFileIndex ].mi64Offset + mpFiles[ liBoundaryFileIndex ].miSize;
+            unsigned int luNewSize = luEndOffset - luExistingSize;
+
+            if( ii < miNumArks - 1 )
+            {
+                // Steal the extra space from the next ark
+                mpArks[ ii + 1 ].muSize -= ( luNewSize - mpArks[ ii ].muSize );
+            }
+
+            mpArks[ ii ].muSize = luNewSize;
+            luExistingSize = luEndOffset;
+        }
+
+        luExistingOffset += mpArks[ ii ].muSize;
     }
 
     //mpArks[ 0 ].muSize = luTotalArkSize;
