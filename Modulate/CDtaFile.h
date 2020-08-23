@@ -1,11 +1,26 @@
 #pragma once
 
-#include <vector>
+#include <deque>
 #include <list>
 #include <string>
 
 #include "Error.h"
 #include "Utils.h"
+
+enum eNodeType {
+    ENodeType_Integer0 = 0,
+    ENodeType_Float = 1,
+    ENodeType_String = 5,
+    ENodeType_Integer6 = 6,
+    ENodeType_Integer8 = 8,
+    ENodeType_Integer9 = 9,
+    ENodeType_Tree1 = 16,
+    ENodeType_Tree2 = 17,
+    ENodeType_Id = 18,
+    ENodeType_IncludeFile = 33,
+    ENodeType_Define = 35,
+    ENodeType_Invalid
+};
 
 struct SSongConfig
 {
@@ -59,8 +74,14 @@ public:
         maChildren.push_back( lpValue );
         return lpValue;
     }
+    
+    CDtaNodeBase* AddChildToFront( CDtaNodeBase* lpValue )
+    {
+        maChildren.insert( maChildren.begin() + 1, lpValue );
+        return lpValue;
+    }
 
-    const std::vector< CDtaNodeBase* >&
+    const std::deque< CDtaNodeBase* >&
     GetChildren() const
     {
         return maChildren;
@@ -88,7 +109,7 @@ private:
         return maChildren.back()->GetHighestNodeId();
     }
 
-    std::vector< CDtaNodeBase* > maChildren;
+    std::deque< CDtaNodeBase* > maChildren;
 
 protected:
     CDtaNodeBase* mpParent;
@@ -136,25 +157,25 @@ CDtaNodeBase* CDtaNodeBase::AddChild( const T& lValue )
 
 void CDtaNode< int >::SaveToStream( unsigned char*& lpStream ) const
 {
-    WriteToStream< int >( lpStream, 0 );
+    WriteToStream< int >( lpStream, miTypeOverride == -1 ? ENodeType_Integer0 : miTypeOverride );
     WriteToStream< int >( lpStream, mValue );
 }
 
 void CDtaNode< unsigned int >::SaveToStream( unsigned char*& lpStream ) const
 {
-    WriteToStream< int >( lpStream, 0 );
+    WriteToStream< int >( lpStream, miTypeOverride == -1 ? ENodeType_Integer0 : miTypeOverride );
     WriteToStream< int >( lpStream, (int)mValue );
 }
 
 void CDtaNode< float >::SaveToStream( unsigned char*& lpStream ) const
 {
-    WriteToStream< int >( lpStream, 1 );
+    WriteToStream< int >( lpStream, miTypeOverride == -1 ? ENodeType_Float : miTypeOverride );
     WriteToStream< float >( lpStream, mValue );
 }
 
 void CDtaNode< std::string >::SaveToStream( unsigned char*& lpStream ) const
 {
-    WriteToStream< int >( lpStream, miTypeOverride != -1 ? miTypeOverride : 5 );
+    WriteToStream< int >( lpStream, miTypeOverride == -1 ? ENodeType_String : miTypeOverride );
     WriteToStream( lpStream, mValue );
 }
 
@@ -174,21 +195,6 @@ public:
     eError UpdateSongData( const std::vector< SSongConfig >& laSongs );
 
 private:
-    enum eNodeType {
-        ENodeType_Integer0    = 0,
-        ENodeType_Float       = 1,
-        ENodeType_String      = 5,
-        ENodeType_Integer6    = 6,
-        ENodeType_Integer8    = 8,
-        ENodeType_Integer9    = 9,
-        ENodeType_Tree1       = 16,
-        ENodeType_Tree2       = 17,
-        ENodeType_Id          = 18,
-        ENodeType_Filename    = 33,
-        ENodeType_Define      = 35,
-        ENodeType_Invalid
-    };
-
     eError AddTreeNode( CDtaNodeBase* lpParent, const char*& lpData, eNodeType leNodeType );
 
     CDtaNodeBase mRootNode;

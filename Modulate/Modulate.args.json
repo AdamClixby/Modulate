@@ -16,11 +16,11 @@
     },
     {
       "Id": "898fa730-e6a4-4f36-ae01-a6e95a6f4322",
-      "Command": "-buildsong unpacked kerosene"
+      "Command": "-addsong unpacked phantams"
     },
     {
       "Id": "69977596-dff1-4757-b88a-c20b218e0e7d",
-      "Command": "-addsong unpacked phantams"
+      "Command": "-addsong unpacked kerosene"
     },
     {
       "Id": "6f757290-2840-42c7-bc6a-e7ac02f5b7cf",
@@ -32,7 +32,7 @@
     },
     {
       "Id": "2fc952c8-3079-42c9-b0c2-b3ffdbcdb2cb",
-      "Command": "-addpack unpacked repacked"
+      "Command": "-addpack unpacked D:\\Amplitude\\RPCS3\\dev_hdd0\\game\\NPUB31810\\USRDIR"
     }
   ]
 }

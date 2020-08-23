@@ -210,6 +210,10 @@ eError CDtaFile::SetSongs( const std::vector< SSongConfig >& laSongs )
             continue;
         }
 
+        //CDtaNodeBase* lpNode = lpSongsNode->FindNode( "PHANTOMS" );
+        //dynamic_cast<CDtaNode<std::string>*>( lpNode )->SetValue( lSong.mId );
+        //dynamic_cast<CDtaNode<std::string>*>( lpNode->GetParent()->GetChildren()[ 1 ] )->SetValue( lSong.mName );
+
         // new song
         {
             CDtaNodeBase* lpNewSongNode = new CDtaNodeBase( lpSongsNode, liNextNodeId++ );
@@ -225,13 +229,16 @@ eError CDtaFile::SetSongs( const std::vector< SSongConfig >& laSongs )
             lpSongsNode->AddChild( lpNewSongNode );
         }
 
+        //lpNode = lpUnlockListNode->FindNode( "PHANTOMS" );
+        //dynamic_cast<CDtaNode<std::string>*>( lpNode )->SetValue( lSong.mId );
+
         // unlock data
         {
             CDtaNodeBase* lpNewUnlockNode = new CDtaNodeBase( lpUnlockListNode, liNextNodeId++ );
             lpNewUnlockNode->SetTypeOverride( ENodeType_Tree1 );
             {
                 lpNewUnlockNode->AddChild( lUnlockMethod );
-                lpNewUnlockNode->AddChild( 0 );
+                lpNewUnlockNode->AddChild( 0 )->SetTypeOverride( ENodeType_Integer0 );
                 lpNewUnlockNode->AddChild( lType );
                 lpNewUnlockNode->AddChild( lSong.mId );
             }
@@ -286,7 +293,7 @@ eError CDtaFile::UpdateSongData( const std::vector< SSongConfig >& laSongs )
         }
 
         // New song
-        int liWorldIndex = std::hash<std::string>{}( lSong.mId ) % 3;
+        int liWorldIndex = 0;// std::hash<std::string>{}( lSong.mId ) % 3;
         char laIndex[ 4 ];
         _itoa( liWorldIndex + 1, laIndex, 10 );
 
@@ -300,12 +307,18 @@ eError CDtaFile::UpdateSongData( const std::vector< SSongConfig >& laSongs )
         }
 
         CDtaNodeBase* lpWorldGroupNode = lpWorldNode->GetParent();
-            
+
+        //CDtaNodeBase* lpNewSongNode = lpWorldGroupNode->GetChildren()[ 6 ];
+        //{
+        //    dynamic_cast<CDtaNode<std::string>*>( lpNewSongNode->GetChildren()[ 0 ] )->SetValue( lSong.mId );
+        //    dynamic_cast<CDtaNode<std::string>*>( lpNewSongNode->GetChildren()[ 1 ] )->SetValue( lSong.mPath );
+        //}
+
         CDtaNodeBase* lpNewSongNode = new CDtaNodeBase( lpWorldGroupNode, liNextNodeId++ );
         lpNewSongNode->SetTypeOverride( ENodeType_Tree1 );
         {
             lpNewSongNode->AddChild( lSong.mId );
-            lpNewSongNode->AddChild( lSong.mPath );
+            lpNewSongNode->AddChild( lSong.mPath )->SetTypeOverride( ENodeType_IncludeFile );
 
             CDtaNodeBase* lpTypeTreeNode = new CDtaNodeBase( lpNewSongNode, liNextNodeId++ );
             lpTypeTreeNode->SetTypeOverride( ENodeType_Tree1 );
@@ -386,7 +399,7 @@ eError CDtaFile::AddTreeNode( CDtaNodeBase* lpParent, const char*& lpData, eNode
         switch( (eNodeType)liType )
         {
         case ENodeType_String:
-        case ENodeType_Filename:
+        case ENodeType_IncludeFile:
         case ENodeType_Define:
         case ENodeType_Id:
         {
@@ -1192,12 +1205,12 @@ void CDtaNodeBase::SaveToStream( unsigned char*& lpStream ) const
     WriteToStream< short >( lpStream, (short)maChildren.size() );
     WriteToStream< short >( lpStream, msNodeId );
 
-    for( std::vector< CDtaNodeBase* >::const_iterator lIter = maChildren.begin(); lIter != maChildren.end(); ++lIter )
+    for( auto lIter = maChildren.begin(); lIter != maChildren.end(); ++lIter )
     {
-        const CDtaNodeBase* lpChild = *lIter;
+        CDtaNodeBase* lpChild = *lIter;
         if( lpChild->IsBaseNode() )
         {
-            WriteToStream< int >( lpStream, lpChild->miTypeOverride );
+            WriteToStream< int >( lpStream, lpChild->miTypeOverride == -1 ? ENodeType_Tree1 : lpChild->miTypeOverride );
             WriteToStream< int >( lpStream, 1 );
         }
 

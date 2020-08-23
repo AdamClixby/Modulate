@@ -107,10 +107,10 @@ eError BuildSingleSong( std::deque< std::string >& laParams )
     }
     else
     {
-        // Is this necessary?
-        lpMidiData[ 0x2A ] = ( liMidiBPM >> 16 ) & 0xFF;
-        lpMidiData[ 0x2B ] = ( liMidiBPM >> 8 ) & 0xFF;
-        lpMidiData[ 0x2C ] = ( liMidiBPM >> 0 ) & 0xFF;
+        //// Is this necessary?
+        //lpMidiData[ 0x2A ] = ( liMidiBPM >> 16 ) & 0xFF;
+        //lpMidiData[ 0x2B ] = ( liMidiBPM >> 8 ) & 0xFF;
+        //lpMidiData[ 0x2C ] = ( liMidiBPM >> 0 ) & 0xFF;
     }
 
     int64_t lTerminator = CSettings::mbPS4 ? 0x01abcdabcdabcdab : 0xcdabcdabcdabcdab;
@@ -157,6 +157,8 @@ eError BuildSingleSong( std::deque< std::string >& laParams )
     fclose( lpMidiFile );
 
     delete[] lpMidiData;
+
+    std::cout << "\n";
 
     return eError_NoError;
 }
@@ -460,6 +462,9 @@ eError ListSongs( std::deque< std::string >& laParams )
         ++ii;
     }
 
+    //lAmpConfig.Save( lAmpConfigPath.c_str() );
+    //lSongsConfig.Save( lAmpSongsConfigPath.c_str() );
+
     return eError_NoError;
 }
 
@@ -501,6 +506,9 @@ eError AddPack( std::deque< std::string >& laParams )
 
 eError AddSong( std::deque< std::string >& laParams )
 {
+    std::deque< std::string > laBuildSongParams = laParams;
+    BuildSingleSong( laBuildSongParams );
+
     std::cout << "Adding song ";
 
     if( laParams.empty() )
@@ -518,7 +526,7 @@ eError AddSong( std::deque< std::string >& laParams )
     std::cout << lSongId << "\n";
 
     std::string lAmpConfigPath = lBasePath + CSettings::msPlatform + "/config/amp_config.dta_dta_" + CSettings::msPlatform;
-    std::cout << "Loading" << lAmpConfigPath.c_str() << "\n";
+    std::cout << "Loading " << lAmpConfigPath.c_str() << "\n";
 
     CDtaFile lAmpConfig;
     eError leError = lAmpConfig.Load( lAmpConfigPath.c_str() );

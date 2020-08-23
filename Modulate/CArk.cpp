@@ -439,12 +439,13 @@ eError CArk::ExtractFiles( int liFirstFileIndex, int liNumFiles, const char* lpT
         fopen_s( &lpOutputFile, lOutputPath.c_str(), "wb" );
         if( !lpOutputFile )
         {
-            eError leError = eError_FailedToCreateFile;
-            SHOW_ERROR_AND_RETURN;
+            std::cout << "Failed to create " << lOutputPath.c_str() << "\n";
         }
-
-        fwrite( &mpArkData[ lpFileDef->mi64Offset ], lpFileDef->miSize, 1, lpOutputFile );
-        fclose( lpOutputFile );
+        else
+        {
+            fwrite( &mpArkData[ lpFileDef->mi64Offset ], lpFileDef->miSize, 1, lpOutputFile );
+            fclose( lpOutputFile );
+        }
     }
 
     return eError_NoError;
