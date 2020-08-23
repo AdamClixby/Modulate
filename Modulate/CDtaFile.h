@@ -197,6 +197,7 @@ public:
     void SetMidiPath( const std::string& lFilename ) { mMidiPath = lFilename; }
 
     float GetBPM() const { return mfBPM; }
+    const std::string& GetTitle() const { return mTitle; }
 
 private:
     eError ProcessMoggSongKey( char*& lpKey );

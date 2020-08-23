@@ -9,6 +9,7 @@
 #include <functional>
 
 #include <deque>
+#include <algorithm>
 #include <string>
 
 #include "Error.h"
@@ -18,6 +19,14 @@
 #include "CArk.h"
 #include "CDtaFile.h"
 #include "CEncryptionCycler.h"
+
+void ToUpper( std::string& lString )
+{
+    std::for_each( lString.begin(), lString.end(), []( char& c )
+    {
+        c = ::toupper( c );
+    } );
+}
 
 eError EnableVerbose( std::deque< std::string >& )
 {
@@ -440,12 +449,14 @@ eError ListSongs( std::deque< std::string >& laParams )
         SHOW_ERROR_AND_RETURN;
     }
 
+    std::cout << "\n";
+
     int ii = 1;
     std::vector< SSongConfig > lSongs = lAmpConfig.GetSongs();
     lSongsConfig.GetSongData( lSongs );
     for( auto& lSong : lSongs )
     {
-        std::cout << "Song " << ii << "\t  " << lSong.mId << " - " << lSong.mName << " - " << lSong.mType << "\n\t  " << lSong.mPath << "\n\t  Unlocked by " << lSong.mUnlockMethod << " " << lSong.miUnlockCount << "\n";
+        std::cout << "Song " << ii << "\t  " << lSong.mId << " - " << lSong.mName << " - " << lSong.mType << "\n\t  " << lSong.mPath << "\n\t  Unlocked by " << lSong.mUnlockMethod << " " << lSong.miUnlockCount << "\n\n";
         ++ii;
     }
 
@@ -466,18 +477,107 @@ void PrintUsage()
     std::cout << "-force\t\tOverwrite existing files\n";
     std::cout << "\nCommands:\n";
     std::cout << "-unpack <out_dir>\t\t\t\tUnpack the contents of the .ark file(s) to <out_dir>\n";
-    std::cout << "-pack <in_dir> <out_dir>\t\t\tRepack data into an .ark file\n";
+    std::cout << "-pack <in_dir> <out_dir>\t\t\tRepack data into an .ark file, ignoring new files\n";
+    std::cout << "-addpack <in_dir> <out_dir>\t\t\tRepack data into an .ark file, adding new files\n";
     std::cout << "-replace <data_dir> <old_song> <new_song>\tReplace <old_song> with the song from <new_song>\n\t\t\t\t\t\tRequires <new_song.mid> <new_song.mogg> <new_song.moggsong>\n";
     std::cout << "-buildsong <data_dir> <song_name>\t\tBuild <song_name> binary data from <song_name.moggsong>\n";
-    std::cout << "-buildsongs <data_dir>\t\t\tBuild binary data for all songs from their .moggsong (tutorials excluded)\n";
-    std::cout << "-decode <data_dir>\t\t\tDecode the .hdr file\n";
-    std::cout << "-listsongs <data_dir>\t\t\tList all songs from the game\n";
+    std::cout << "-buildsongs <data_dir>\t\t\t\tBuild binary data for all songs from their .moggsong (tutorials excluded)\n";
+    std::cout << "-decode <data_dir>\t\t\t\tDecode the .hdr file\n";
+    std::cout << "-listsongs <data_dir>\t\t\t\tList all songs from the game\n";
+    std::cout << "-addsong <data_dir> <song_name>\t\t\tAdd <song_name> to the list of songs\n";
 }
 
 eError PS3( std::deque< std::string >& laParams )
 {
     CSettings::mbPS4 = false;
     CSettings::msPlatform = "ps3";
+
+    std::cout << "Switching to PS3 mode";
+
+    return eError_NoError;
+}
+
+eError AddPack( std::deque< std::string >& laParams )
+{
+    CSettings::mbIgnoreNewFiles = false;
+    eError leError = Pack( laParams );
+    CSettings::mbIgnoreNewFiles = true;
+    return leError;
+}
+
+eError AddSong( std::deque< std::string >& laParams )
+{
+    std::cout << "Loading ";
+    if( laParams.empty() )
+    {
+        return eError_InvalidParameter;
+    }
+    std::string lBasePath = laParams.front();
+    laParams.pop_front();
+    if( lBasePath.back() != '/' && lBasePath.back() != '\\' )
+    {
+        lBasePath += "/";
+    }
+
+    std::string lAmpConfigPath = lBasePath + CSettings::msPlatform + "/config/amp_config.dta_dta_" + CSettings::msPlatform;
+    std::cout << lAmpConfigPath.c_str() << "\n";
+
+    CDtaFile lAmpConfig;
+    eError leError = lAmpConfig.Load( lAmpConfigPath.c_str() );
+    if( leError != eError_NoError )
+    {
+        SHOW_ERROR_AND_RETURN;
+    }
+
+    std::string lAmpSongsConfigPath = lBasePath + CSettings::msPlatform + "/config/amp_songs_config.dta_dta_" + CSettings::msPlatform;
+    std::cout << "Loading " << lAmpSongsConfigPath.c_str() << "\n";
+
+    CDtaFile lSongsConfig;
+    leError = lSongsConfig.Load( lAmpSongsConfigPath.c_str() );
+    if( leError != eError_NoError )
+    {
+        SHOW_ERROR_AND_RETURN;
+    }
+
+    std::cout << "\n";
+
+    int ii = 1;
+    std::vector< SSongConfig > laSongs = lAmpConfig.GetSongs();
+    lSongsConfig.GetSongData( laSongs );
+
+    std::string lSongId = laParams.front();
+    laParams.pop_front();
+
+    std::string lMoggFilename = lBasePath + CSettings::msPlatform + "/songs/" + lSongId + "/" + lSongId + ".moggsong";
+    
+    CMoggsong lMoggFile;
+    leError = lMoggFile.LoadMoggSong( lMoggFilename.c_str() );
+    if( leError != eError_NoError )
+    {
+        SHOW_ERROR_AND_RETURN;
+    }
+
+    std::string lSongIdUpper = lSongId;
+    ToUpper( lSongIdUpper );
+
+    SSongConfig lNewSong;
+    lNewSong.mId = lSongIdUpper;
+    lNewSong.mName = lMoggFile.GetTitle();
+    lNewSong.mUnlockMethod = "play_num";
+    lNewSong.mType = "kSongExtra";
+    lNewSong.mPath = "../Songs/" + lSongId + "/" + lSongId + ".moggsong";
+    lNewSong.miUnlockCount = 0;
+
+    laSongs.push_back( lNewSong );
+
+//    lSongsConfig.UpdateSongsData( laSongs );
+ //   lAmpConfig.SetSongs( laSongs );
+
+    lAmpConfigPath.append( ".out" );
+    lAmpConfig.Save( lAmpConfigPath.c_str() );
+
+    lAmpSongsConfigPath.append( ".out" );
+    lSongsConfig.Save( lAmpSongsConfigPath.c_str() );
 
     return eError_NoError;
 }
@@ -498,8 +598,10 @@ int main( int argc, char *argv[], char *envp[] )
         "-buildsong",   BuildSingleSong,
         "-buildsongs",  BuildSongs,
         "-pack",        Pack,
+        "-addpack",     AddPack,
         "-decode",      Decode,
         "-listsongs",   ListSongs,
+        "-addsong",     AddSong,
         nullptr,        nullptr,
     };
 

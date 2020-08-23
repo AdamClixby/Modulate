@@ -105,7 +105,7 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
             lpFileDef->mName = *lFilename;
             fseek( lFile, 0, SEEK_END );
             int liNewSize = ftell( lFile );
-            assert( liNewSize == lpFileDef->miSize );
+            //assert( liNewSize == lpFileDef->miSize );
             lpFileDef->miSize = liNewSize;
             fclose( lFile );
 
@@ -142,7 +142,7 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
 
                 fseek( lFile, 0, SEEK_END );
                 int liNewSize = ftell( lFile );
-                assert( liNewSize == lpFileDef->miSize );
+                //assert( liNewSize == lpFileDef->miSize );
                 lpFileDef->miSize = liNewSize;
                 fclose( lFile );
 
