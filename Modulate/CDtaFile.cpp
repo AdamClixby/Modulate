@@ -15,7 +15,7 @@ CDtaNodeBase* CDtaNodeBase::FindNode( const std::string& lName ) const
         if( !lpChild->IsBaseNode() )
         {
             CDtaNode< std::string >* lpStringNode = dynamic_cast<CDtaNode< std::string >*>( lpChild );
-            if( lpStringNode && lpStringNode->IsEqual( lName ) )
+            if( lpStringNode && lpStringNode->GetValue() == lName )
             {
                 return lpStringNode;
             }
@@ -97,7 +97,6 @@ std::vector< SSongConfig > CDtaFile::GetSongs() const
             ESongConfig_NumEntries
         };
 
-        int liNumEntries = (int)lpSongListNode->GetChildren().size();
         for( CDtaNodeBase* lpSongNode : lpSongListNode->GetChildren() )
         {
             if( lpSongNode->GetChildren().size() != ESongConfig_NumEntries )
@@ -105,12 +104,8 @@ std::vector< SSongConfig > CDtaFile::GetSongs() const
                 continue;
             }
 
-            CDtaNode<std::string>* lpIdNode = dynamic_cast<CDtaNode<std::string>*>( lpSongNode->GetChildren()[ ESongConfig_Id ] );
+            CDtaNode<std::string>* lpIdNode   = dynamic_cast<CDtaNode<std::string>*>( lpSongNode->GetChildren()[ ESongConfig_Id ] );
             CDtaNode<std::string>* lpNameNode = dynamic_cast<CDtaNode<std::string>*>( lpSongNode->GetChildren()[ ESongConfig_Name ] );
-            if( !lpIdNode || !lpNameNode )
-            {
-                continue;
-            }
 
             bool lbIsSong = true;
             std::string lId = lpIdNode->GetValue();
@@ -135,9 +130,81 @@ std::vector< SSongConfig > CDtaFile::GetSongs() const
         }
     }
 
+    {
+        CDtaNodeBase* lpNode = mRootNode.FindNode( "campaign" );
+        CDtaNodeBase* lpUnlockListNode = lpNode->GetParent();
 
+        enum eUnlockData
+        {
+            EUnlockData_Method,
+            EUnlockData_Num,
+            EUnlockData_Type,
+            EUnlockData_UnlockedItemId,
+            EUnlockData_NumEntries
+        };
+
+        for( CDtaNodeBase* lpUnlockNode : lpUnlockListNode->GetChildren() )
+        {
+            if( lpUnlockNode->GetChildren().size() != EUnlockData_NumEntries )
+            {
+                continue;
+            }
+
+            CDtaNode<std::string>* lpMethodNode = dynamic_cast<CDtaNode<std::string>*>( lpUnlockNode->GetChildren()[ EUnlockData_Method ] );
+            CDtaNode<int>*         lpNumNode    = dynamic_cast<CDtaNode<int>*>        ( lpUnlockNode->GetChildren()[ EUnlockData_Num ] );
+            CDtaNode<std::string>* lpTypeNode   = dynamic_cast<CDtaNode<std::string>*>( lpUnlockNode->GetChildren()[ EUnlockData_Type ] );
+            CDtaNode<std::string>* lpItemIdNode = dynamic_cast<CDtaNode<std::string>*>( lpUnlockNode->GetChildren()[ EUnlockData_UnlockedItemId ] );
+
+            for( SSongConfig& lSong : laSongs )
+            {
+                if( strcmp( lSong.mId.c_str(), lpItemIdNode->GetValue().c_str() ) == 0 )
+                {
+                    lSong.mUnlockMethod = lpMethodNode->GetValue();
+                    lSong.miUnlockCount = lpNumNode->GetValue();
+                }
+            }
+        }
+    }
 
     return laSongs;
+}
+
+void CDtaFile::GetSongData( std::vector< SSongConfig >& laSongs ) const
+{
+    for( SSongConfig& lSong : laSongs )
+    {
+        CDtaNodeBase* lpSongIdNode = mRootNode.FindNode( lSong.mId );
+        if( !lpSongIdNode )
+        {
+            continue;
+        }
+
+        enum eSongData
+        {
+            ESongData_Id,
+            ESongData_Path,
+            ESongData_TypeNode,
+            ESongData_NumEntries,
+        };
+
+        CDtaNodeBase* lpSongNode = lpSongIdNode->GetParent();
+        if( !lpSongNode || lpSongNode->GetChildren().size() < ESongData_NumEntries )
+        {
+            continue;
+        }
+
+        CDtaNode<std::string>* lpPathNode = dynamic_cast<CDtaNode<std::string>*>( lpSongNode->GetChildren()[ ESongData_Path ] );
+        lSong.mPath = lpPathNode->GetValue();
+
+        CDtaNodeBase* lpTypeTreeNode = lpSongNode->GetChildren()[ ESongData_TypeNode ];
+        if( lpTypeTreeNode->GetChildren().size() < 2 )
+        {
+            continue;
+        }
+
+        CDtaNode<std::string>* lpTypeNode = dynamic_cast<CDtaNode<std::string>*>( lpTypeTreeNode->GetChildren().back() );
+        lSong.mType = lpTypeNode->GetValue();
+    }
 }
 
 eError CDtaFile::Save( const char* lpFilename ) const

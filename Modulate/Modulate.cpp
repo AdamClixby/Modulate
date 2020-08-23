@@ -442,14 +442,18 @@ eError ListSongs( std::deque< std::string >& laParams )
 
     int ii = 1;
     std::vector< SSongConfig > lSongs = lAmpConfig.GetSongs();
+    lSongsConfig.GetSongData( lSongs );
     for( auto& lSong : lSongs )
     {
-        std::cout << "Song " << ii << "\t - " << lSong.mId << " - " << lSong.mName << "\n";
+        std::cout << "Song " << ii << "\t  " << lSong.mId << " - " << lSong.mName << " - " << lSong.mType << "\n\t  " << lSong.mPath << "\n\t  Unlocked by " << lSong.mUnlockMethod << " " << lSong.miUnlockCount << "\n";
         ++ii;
     }
 
     //lAmpConfigPath.append( ".out" );
     //lAmpConfig.Save( lAmpConfigPath.c_str() );
+
+    //lAmpSongsConfigPath.append( ".out" );
+    //lSongsConfig.Save( lAmpSongsConfigPath.c_str() );
 
     return eError_NoError;
 }

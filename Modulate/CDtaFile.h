@@ -9,10 +9,12 @@
 
 struct SSongConfig
 {
-    std::string mId;
-    std::string mName;
-    std::string mUnlockMethod;
-    int mUnlockCount;
+    std::string mId = "";
+    std::string mName = "";
+    std::string mUnlockMethod = "";
+    std::string mType = "";
+    std::string mPath = "";
+    int miUnlockCount = -1;
 };
 
 class CDtaNodeBase
@@ -110,11 +112,6 @@ public:
 
     virtual void SaveToStream( unsigned char*& lpStream ) const override { }
 
-    bool IsEqual( const T& lVal ) const
-    {
-        return lVal == mValue;
-    }
-
     const T& GetValue() const
     {
         return mValue;
@@ -166,6 +163,7 @@ public:
     eError Save( const char* lpFilename ) const;
 
     std::vector< SSongConfig > GetSongs() const;
+    void GetSongData( std::vector< SSongConfig >& laSongs ) const;
 
 private:
     enum eNodeType {
