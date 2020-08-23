@@ -117,6 +117,11 @@ public:
         return mValue;
     }
 
+    void SetValue( const T& lValue )
+    {
+        mValue = lValue;
+    }
+
 private:
     T mValue;
 };
@@ -163,7 +168,10 @@ public:
     eError Save( const char* lpFilename ) const;
 
     std::vector< SSongConfig > GetSongs() const;
+    eError SetSongs( const std::vector< SSongConfig >& laSongs );
+
     void GetSongData( std::vector< SSongConfig >& laSongs ) const;
+    eError UpdateSongData( const std::vector< SSongConfig >& laSongs );
 
 private:
     enum eNodeType {

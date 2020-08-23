@@ -460,12 +460,6 @@ eError ListSongs( std::deque< std::string >& laParams )
         ++ii;
     }
 
-    //lAmpConfigPath.append( ".out" );
-    //lAmpConfig.Save( lAmpConfigPath.c_str() );
-
-    //lAmpSongsConfigPath.append( ".out" );
-    //lSongsConfig.Save( lAmpSongsConfigPath.c_str() );
-
     return eError_NoError;
 }
 
@@ -492,7 +486,7 @@ eError PS3( std::deque< std::string >& laParams )
     CSettings::mbPS4 = false;
     CSettings::msPlatform = "ps3";
 
-    std::cout << "Switching to PS3 mode";
+    std::cout << "Switching to PS3 mode\n";
 
     return eError_NoError;
 }
@@ -507,7 +501,8 @@ eError AddPack( std::deque< std::string >& laParams )
 
 eError AddSong( std::deque< std::string >& laParams )
 {
-    std::cout << "Loading ";
+    std::cout << "Adding song ";
+
     if( laParams.empty() )
     {
         return eError_InvalidParameter;
@@ -519,8 +514,11 @@ eError AddSong( std::deque< std::string >& laParams )
         lBasePath += "/";
     }
 
+    std::string lSongId = laParams.front();
+    std::cout << lSongId << "\n";
+
     std::string lAmpConfigPath = lBasePath + CSettings::msPlatform + "/config/amp_config.dta_dta_" + CSettings::msPlatform;
-    std::cout << lAmpConfigPath.c_str() << "\n";
+    std::cout << "Loading" << lAmpConfigPath.c_str() << "\n";
 
     CDtaFile lAmpConfig;
     eError leError = lAmpConfig.Load( lAmpConfigPath.c_str() );
@@ -539,17 +537,16 @@ eError AddSong( std::deque< std::string >& laParams )
         SHOW_ERROR_AND_RETURN;
     }
 
-    std::cout << "\n";
-
     int ii = 1;
     std::vector< SSongConfig > laSongs = lAmpConfig.GetSongs();
     lSongsConfig.GetSongData( laSongs );
 
-    std::string lSongId = laParams.front();
     laParams.pop_front();
 
     std::string lMoggFilename = lBasePath + CSettings::msPlatform + "/songs/" + lSongId + "/" + lSongId + ".moggsong";
     
+    std::cout << "Loading " << lMoggFilename.c_str() << "\n";
+
     CMoggsong lMoggFile;
     leError = lMoggFile.LoadMoggSong( lMoggFilename.c_str() );
     if( leError != eError_NoError )
@@ -570,14 +567,35 @@ eError AddSong( std::deque< std::string >& laParams )
 
     laSongs.push_back( lNewSong );
 
-//    lSongsConfig.UpdateSongsData( laSongs );
- //   lAmpConfig.SetSongs( laSongs );
+    std::cout << "Updating song data\n";
 
-    lAmpConfigPath.append( ".out" );
-    lAmpConfig.Save( lAmpConfigPath.c_str() );
+    leError = lSongsConfig.UpdateSongData( laSongs );
+    if( leError != eError_NoError )
+    {
+        SHOW_ERROR_AND_RETURN;
+    }
 
-    lAmpSongsConfigPath.append( ".out" );
-    lSongsConfig.Save( lAmpSongsConfigPath.c_str() );
+    leError = lAmpConfig.SetSongs( laSongs );
+    if( leError != eError_NoError )
+    {
+        SHOW_ERROR_AND_RETURN;
+    }
+
+    std::cout << "Saving " << lAmpConfigPath.c_str() << "\n";
+
+    leError = lAmpConfig.Save( lAmpConfigPath.c_str() );
+    if( leError != eError_NoError )
+    {
+        SHOW_ERROR_AND_RETURN;
+    }
+
+    std::cout << "Saving " << lAmpSongsConfigPath.c_str() << "\n";
+
+    leError = lSongsConfig.Save( lAmpSongsConfigPath.c_str() );
+    if( leError != eError_NoError )
+    {
+        SHOW_ERROR_AND_RETURN;
+    }
 
     return eError_NoError;
 }

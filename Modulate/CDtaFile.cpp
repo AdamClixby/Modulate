@@ -8,6 +8,23 @@
 
 #define VALIDATE_STRING( lpString ) if( !lpString ) { delete[] lpInputData; return eError_InvalidData; }
 
+enum eSongData
+{
+    ESongData_Id,
+    ESongData_Path,
+    ESongData_TypeNode,
+    ESongData_NumEntries,
+};
+
+enum eUnlockData
+{
+    EUnlockData_Method,
+    EUnlockData_Num,
+    EUnlockData_Type,
+    EUnlockData_UnlockedItemId,
+    EUnlockData_NumEntries
+};
+
 CDtaNodeBase* CDtaNodeBase::FindNode( const std::string& lName ) const
 {
     for( auto& lpChild : maChildren )
@@ -134,15 +151,6 @@ std::vector< SSongConfig > CDtaFile::GetSongs() const
         CDtaNodeBase* lpNode = mRootNode.FindNode( "campaign" );
         CDtaNodeBase* lpUnlockListNode = lpNode->GetParent();
 
-        enum eUnlockData
-        {
-            EUnlockData_Method,
-            EUnlockData_Num,
-            EUnlockData_Type,
-            EUnlockData_UnlockedItemId,
-            EUnlockData_NumEntries
-        };
-
         for( CDtaNodeBase* lpUnlockNode : lpUnlockListNode->GetChildren() )
         {
             if( lpUnlockNode->GetChildren().size() != EUnlockData_NumEntries )
@@ -169,6 +177,71 @@ std::vector< SSongConfig > CDtaFile::GetSongs() const
     return laSongs;
 }
 
+eError CDtaFile::SetSongs( const std::vector< SSongConfig >& laSongs )
+{
+    int liNextNodeId = 500;// GetHighestNodeId();
+
+    eError leError = eError_NoError;
+
+    CDtaNodeBase* lpCampaignNode = mRootNode.FindNode( "campaign" );
+    CDtaNodeBase* lpUnlockTokensNode = mRootNode.FindNode( "unlock_tokens" );
+    if( !lpCampaignNode || !lpUnlockTokensNode )
+    {
+        leError = eError_InvalidData;
+        SHOW_ERROR_AND_RETURN;
+    }
+
+    static std::string lUnlockExtra( "unlock_extra" );
+    static std::string lUnlockExtraDesc( "unlock_extra_desc" );
+    static std::string lBlackSquare( "ui/textures/black_square.png" );
+    static std::string lSongExtra( "CAMPVO_song_extra" );
+
+    static std::string lUnlockMethod( "play_num" );
+    static std::string lType( "kUnlockExtraSong" );
+
+    CDtaNodeBase* lpUnlockListNode = lpCampaignNode->GetParent();
+    CDtaNodeBase* lpSongsNode = lpUnlockTokensNode->GetParent();
+
+    for( const SSongConfig& lSong : laSongs )
+    {
+        CDtaNodeBase* lpSongIdNode = lpSongsNode->FindNode( lSong.mId );
+        if( lpSongIdNode )
+        {
+            continue;
+        }
+
+        // new song
+        {
+            CDtaNodeBase* lpNewSongNode = new CDtaNodeBase( lpSongsNode, liNextNodeId++ );
+            lpNewSongNode->SetTypeOverride( ENodeType_Tree1 );
+            {
+                lpNewSongNode->AddChild( lSong.mId );
+                lpNewSongNode->AddChild( lSong.mName );
+                lpNewSongNode->AddChild( lUnlockExtra );
+                lpNewSongNode->AddChild( lUnlockExtraDesc );
+                lpNewSongNode->AddChild( lBlackSquare );
+                lpNewSongNode->AddChild( lSongExtra );
+            }
+            lpSongsNode->AddChild( lpNewSongNode );
+        }
+
+        // unlock data
+        {
+            CDtaNodeBase* lpNewUnlockNode = new CDtaNodeBase( lpUnlockListNode, liNextNodeId++ );
+            lpNewUnlockNode->SetTypeOverride( ENodeType_Tree1 );
+            {
+                lpNewUnlockNode->AddChild( lUnlockMethod );
+                lpNewUnlockNode->AddChild( 0 );
+                lpNewUnlockNode->AddChild( lType );
+                lpNewUnlockNode->AddChild( lSong.mId );
+            }
+            lpUnlockListNode->AddChild( lpNewUnlockNode );
+        }
+    }
+
+    return eError_NoError;
+}
+
 void CDtaFile::GetSongData( std::vector< SSongConfig >& laSongs ) const
 {
     for( SSongConfig& lSong : laSongs )
@@ -178,14 +251,6 @@ void CDtaFile::GetSongData( std::vector< SSongConfig >& laSongs ) const
         {
             continue;
         }
-
-        enum eSongData
-        {
-            ESongData_Id,
-            ESongData_Path,
-            ESongData_TypeNode,
-            ESongData_NumEntries,
-        };
 
         CDtaNodeBase* lpSongNode = lpSongIdNode->GetParent();
         if( !lpSongNode || lpSongNode->GetChildren().size() < ESongData_NumEntries )
@@ -205,6 +270,56 @@ void CDtaFile::GetSongData( std::vector< SSongConfig >& laSongs ) const
         CDtaNode<std::string>* lpTypeNode = dynamic_cast<CDtaNode<std::string>*>( lpTypeTreeNode->GetChildren().back() );
         lSong.mType = lpTypeNode->GetValue();
     }
+}
+
+eError CDtaFile::UpdateSongData( const std::vector< SSongConfig >& laSongs )
+{
+    static std::string lTypeName( "type" );
+
+    int liNextNodeId = 500;// GetHighestNodeId();
+    for( const SSongConfig& lSong : laSongs )
+    {
+        CDtaNodeBase* lpSongIdNode = mRootNode.FindNode( lSong.mId );
+        if( lpSongIdNode )
+        {
+            continue;
+        }
+
+        // New song
+        int liWorldIndex = std::hash<std::string>{}( lSong.mId ) % 3;
+        char laIndex[ 4 ];
+        _itoa( liWorldIndex + 1, laIndex, 10 );
+
+        std::string lWorldName = "World";
+        lWorldName.append( laIndex );
+
+        CDtaNodeBase* lpWorldNode = mRootNode.FindNode( lWorldName );
+        if( !lpWorldNode )
+        {
+            return eError_InvalidData;
+        }
+
+        CDtaNodeBase* lpWorldGroupNode = lpWorldNode->GetParent();
+            
+        CDtaNodeBase* lpNewSongNode = new CDtaNodeBase( lpWorldGroupNode, liNextNodeId++ );
+        lpNewSongNode->SetTypeOverride( ENodeType_Tree1 );
+        {
+            lpNewSongNode->AddChild( lSong.mId );
+            lpNewSongNode->AddChild( lSong.mPath );
+
+            CDtaNodeBase* lpTypeTreeNode = new CDtaNodeBase( lpNewSongNode, liNextNodeId++ );
+            lpTypeTreeNode->SetTypeOverride( ENodeType_Tree1 );
+            {
+                lpTypeTreeNode->AddChild( lTypeName );
+                lpTypeTreeNode->AddChild( lSong.mType );
+            }
+            lpNewSongNode->AddChild( lpTypeTreeNode );
+        }
+
+        lpWorldGroupNode->AddChild( lpNewSongNode );
+    }
+
+    return eError_NoError;
 }
 
 eError CDtaFile::Save( const char* lpFilename ) const
