@@ -13,6 +13,14 @@
     {
       "Id": "eec23900-8bfd-43ae-a108-296d12238a97",
       "Command": "-pack unpacked repacked"
+    },
+    {
+      "Id": "8f652493-2dd4-47e3-98f7-fe0409629161",
+      "Command": "-replace unpacked concept kerosene"
+    },
+    {
+      "Id": "6f757290-2840-42c7-bc6a-e7ac02f5b7cf",
+      "Command": "-listsongs unpacked"
     }
   ]
 }

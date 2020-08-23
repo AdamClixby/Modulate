@@ -83,57 +83,6 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
 
     sFileDefinition* lpFileDef = mpFiles;
 
-    /*
-    std::vector< size_t > laProcessedFileHashes;
-    laProcessedFileHashes.reserve( lReferenceHeader.miNumFiles );
-    for( int ii = 0; ii < lReferenceHeader.miNumFiles; ++ii )
-    {
-        const std::string& lFilename = lReferenceHeader.mpFiles[ ii ].mName;
-        size_t lFilenameHash = std::hash< std::string >{}( lFilename );
-        if( std::find( laProcessedFileHashes.begin(), laProcessedFileHashes.end(), lFilenameHash ) != laProcessedFileHashes.end() )
-        {
-            continue;
-        }
-
-        laProcessedFileHashes.push_back( lFilenameHash );
-
-        const sFileDefinition* lpReferenceFile = lReferenceHeader.GetFile( lFilenameHash, 0 );
-
-        int jj = 1;
-        while( lpReferenceFile )
-        {
-            *lpFileDef = *lpReferenceFile;
-
-            if( strstr( lpFileDef->mName.c_str(), "/config/arkbuild/" ) ||
-                ( strstr( lpFileDef->mName.c_str(), ".moggsong" ) && !strstr( lpFileDef->mName.c_str(), ".moggsong_dta_" ) ) )
-            {
-                lpFileDef->miSize = 0;
-                ++lpFileDef;
-                continue;
-            }
-
-            FILE* lFile = nullptr;
-            std::string lSourceFilename = lpInputDirectory + lpFileDef->mName;
-            fopen_s( &lFile, lSourceFilename.c_str(), "rb" );
-            if( !lFile )
-            {
-                std::cout << "Unable to open file: " << lSourceFilename.c_str() << "\n";
-                ++lpFileDef;
-                continue;
-            }
-
-            fseek( lFile, 0, SEEK_END );
-            lpFileDef->miSize = ftell( lFile );
-            fclose( lFile );
-
-            luTotalFileSize += lpFileDef->miSize;
-
-            ++lpFileDef;
-            lpReferenceFile = lReferenceHeader.GetFile( lFilenameHash, jj++ );
-        }
-    }
-    */
-
     std::vector<std::string>::const_iterator lFilename = laFilenames.begin();
     for( int ii = 0; ii < miNumFiles && lFilename != laFilenames.end(); ++ii, ++lFilename )
     {

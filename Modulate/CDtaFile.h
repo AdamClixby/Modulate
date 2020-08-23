@@ -7,17 +7,30 @@
 #include "Error.h"
 #include "Utils.h"
 
+struct SSongConfig
+{
+    std::string mId;
+    std::string mName;
+    std::string mUnlockMethod;
+    int mUnlockCount;
+};
+
 class CDtaNodeBase
 {
 public:
-    CDtaNodeBase( int liNodeId ) : msNodeId( liNodeId ) {}
+    CDtaNodeBase( CDtaNodeBase* lpParent, int liNodeId ) : mpParent( lpParent ), msNodeId( liNodeId ) {}
 
     virtual ~CDtaNodeBase()
     {
-        for( std::list< CDtaNodeBase* >::iterator lIter = maChildren.begin(); lIter != maChildren.end(); ++lIter )
+        for( auto& lpNode : maChildren )
         {
-            delete *lIter;
+            delete lpNode;
         }
+    }
+
+    void SetId( int liNewId )
+    {
+        msNodeId = liNewId;
     }
 
     bool IsBaseNode() const
@@ -32,12 +45,31 @@ public:
 
     CDtaNodeBase* AddNode( short lsNodeId )
     {
-        maChildren.push_back( new CDtaNodeBase( lsNodeId ) );
+        maChildren.push_back( new CDtaNodeBase( this, lsNodeId ) );
         return maChildren.back();
     }
 
     template < class T >
     CDtaNodeBase* AddChild( const T& lValue );
+
+    CDtaNodeBase* AddChild( CDtaNodeBase* lpValue )
+    {
+        maChildren.push_back( lpValue );
+        return lpValue;
+    }
+
+    const std::vector< CDtaNodeBase* >&
+    GetChildren() const
+    {
+        return maChildren;
+    }
+
+    CDtaNodeBase* GetParent() const
+    {
+        return mpParent;
+    }
+
+    CDtaNodeBase* FindNode( const std::string& lName ) const;
 
     void Save( unsigned char*& lpStream ) const;
 
@@ -54,12 +86,14 @@ private:
         return maChildren.back()->GetHighestNodeId();
     }
 
-    std::list< CDtaNodeBase* > maChildren;
+    std::vector< CDtaNodeBase* > maChildren;
 
 protected:
+    CDtaNodeBase* mpParent;
+
     int   miTypeOverride = -1;
     short msNodeId;
-    bool mbIsBaseNode = true;
+    bool  mbIsBaseNode = true;
 };
 
 
@@ -67,14 +101,24 @@ template < class T >
 class CDtaNode : public CDtaNodeBase
 {
 public:
-    CDtaNode( int liNodeId, const T& lValue )
-        : CDtaNodeBase( liNodeId )
+    CDtaNode( CDtaNodeBase* lpParent, int liNodeId, const T& lValue )
+        : CDtaNodeBase( lpParent, liNodeId )
     {
         mValue = lValue;
         mbIsBaseNode = false;
     }
 
     virtual void SaveToStream( unsigned char*& lpStream ) const override { }
+
+    bool IsEqual( const T& lVal ) const
+    {
+        return lVal == mValue;
+    }
+
+    const T& GetValue() const
+    {
+        return mValue;
+    }
 
 private:
     T mValue;
@@ -83,7 +127,7 @@ private:
 template < class T >
 CDtaNodeBase* CDtaNodeBase::AddChild( const T& lValue )
 {
-    CDtaNode< T >* lNewNode = new CDtaNode< T >( msNodeId, lValue );
+    CDtaNode< T >* lNewNode = new CDtaNode< T >( this, msNodeId, lValue );
     maChildren.push_back( lNewNode );
     return lNewNode;
 }
@@ -114,6 +158,38 @@ void CDtaNode< std::string >::SaveToStream( unsigned char*& lpStream ) const
 
 
 class CDtaFile
+{
+public:
+    CDtaFile() : mRootNode( nullptr, 1 ) {}
+
+    eError Load( const char* lpFilename );
+    eError Save( const char* lpFilename ) const;
+
+    std::vector< SSongConfig > GetSongs() const;
+
+private:
+    enum eNodeType {
+        ENodeType_Integer0    = 0,
+        ENodeType_Float       = 1,
+        ENodeType_String      = 5,
+        ENodeType_Integer6    = 6,
+        ENodeType_Integer8    = 8,
+        ENodeType_Integer9    = 9,
+        ENodeType_Tree1       = 16,
+        ENodeType_Tree2       = 17,
+        ENodeType_Id          = 18,
+        ENodeType_Filename    = 33,
+        ENodeType_Define      = 35,
+        ENodeType_Invalid
+    };
+
+    eError AddTreeNode( CDtaNodeBase* lpParent, const char*& lpData, eNodeType leNodeType );
+
+    CDtaNodeBase mRootNode;
+};
+
+
+class CMoggsong
 {
 public:
     eError LoadMoggSong( const char* lpFilename );

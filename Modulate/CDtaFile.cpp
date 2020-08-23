@@ -2,12 +2,293 @@
 #include "CDtaFile.h"
 
 #include <functional>
+#include <algorithm>
 
 #include "Utils.h"
 
 #define VALIDATE_STRING( lpString ) if( !lpString ) { delete[] lpInputData; return eError_InvalidData; }
 
-eError CDtaFile::LoadMoggSong( const char* lpFilename )
+CDtaNodeBase* CDtaNodeBase::FindNode( const std::string& lName ) const
+{
+    for( auto& lpChild : maChildren )
+    {
+        if( !lpChild->IsBaseNode() )
+        {
+            CDtaNode< std::string >* lpStringNode = dynamic_cast<CDtaNode< std::string >*>( lpChild );
+            if( lpStringNode && lpStringNode->IsEqual( lName ) )
+            {
+                return lpStringNode;
+            }
+
+            continue;
+        }
+
+        CDtaNodeBase* lpFoundInChild = lpChild->FindNode( lName );
+        if( lpFoundInChild )
+        {
+            return lpFoundInChild;
+        }
+    }
+
+    return nullptr;
+}
+
+eError CDtaFile::Load( const char* lpFilename )
+{
+    FILE* lpInputFile = nullptr;
+    fopen_s( &lpInputFile, lpFilename, "rb" );
+    if( !lpInputFile )
+    {
+        eError leError = eError_FailedToOpenFile;
+        SHOW_ERROR_AND_RETURN;
+    }
+
+    fseek( lpInputFile, 0, SEEK_END );
+    int liFileSize = ftell( lpInputFile );
+    fseek( lpInputFile, 0, SEEK_SET );
+
+    char* lpInputData = new char[ liFileSize ];
+    fread( lpInputData, liFileSize, 1, lpInputFile );
+    fclose( lpInputFile );
+
+    const char* lpDataPtr = lpInputData + 5;
+
+    int liType = ENodeType_Tree1;
+
+    while( lpDataPtr < lpInputData + liFileSize )
+    {
+        if( liType != ENodeType_Tree1 &&
+            liType != ENodeType_Tree2 )
+        {
+            eError leError = eError_InvalidData;
+            SHOW_ERROR_AND_RETURN_W( delete[] lpInputData );
+        }
+
+        eError leError = AddTreeNode( &mRootNode, lpDataPtr, (eNodeType)liType );
+        if( leError != eError_NoError )
+        {
+            SHOW_ERROR_AND_RETURN_W( delete[] lpInputData );
+        }
+
+        liType = *(int*)lpDataPtr;
+        lpDataPtr += sizeof( int ) * 2;
+    }
+
+    delete[] lpInputData;
+    return eError_NoError;
+}
+
+std::vector< SSongConfig > CDtaFile::GetSongs() const
+{
+    std::vector< SSongConfig > laSongs;
+
+    {
+        CDtaNodeBase* lpNode = mRootNode.FindNode( "unlock_tokens" );
+        CDtaNodeBase* lpSongListNode = lpNode->GetParent();
+
+        enum eSongConfig
+        {
+            ESongConfig_Id,
+            ESongConfig_Name,
+            ESongConfig_UnlockTitle,
+            ESongConfig_UnlockDesc,
+            ESongConfig_Icon,
+            ESongConfig_Type,
+            ESongConfig_NumEntries
+        };
+
+        int liNumEntries = (int)lpSongListNode->GetChildren().size();
+        for( CDtaNodeBase* lpSongNode : lpSongListNode->GetChildren() )
+        {
+            if( lpSongNode->GetChildren().size() != ESongConfig_NumEntries )
+            {
+                continue;
+            }
+
+            CDtaNode<std::string>* lpIdNode = dynamic_cast<CDtaNode<std::string>*>( lpSongNode->GetChildren()[ ESongConfig_Id ] );
+            CDtaNode<std::string>* lpNameNode = dynamic_cast<CDtaNode<std::string>*>( lpSongNode->GetChildren()[ ESongConfig_Name ] );
+            if( !lpIdNode || !lpNameNode )
+            {
+                continue;
+            }
+
+            bool lbIsSong = true;
+            std::string lId = lpIdNode->GetValue();
+            std::for_each( lId.begin(), lId.end(), [&lbIsSong]( char c )
+            {
+                if( c != ::toupper( c ) )
+                {
+                    lbIsSong = false;
+                }
+            } );
+
+            if( !lbIsSong )
+            {
+                continue;
+            }
+
+            SSongConfig lConfig;
+            lConfig.mId = lpIdNode->GetValue();
+            lConfig.mName = lpNameNode->GetValue();
+
+            laSongs.push_back( lConfig );
+        }
+    }
+
+
+
+    return laSongs;
+}
+
+eError CDtaFile::Save( const char* lpFilename ) const
+{
+    unsigned char* lpOutputData = new unsigned char[ 1024 * 256 ];
+    unsigned char* lpOutputPtr = lpOutputData;
+
+    *lpOutputPtr++ = 1;
+    *(int*)lpOutputPtr = 1;
+    lpOutputPtr += sizeof( int );
+
+    for( CDtaNodeBase* lpNode : mRootNode.GetChildren() )
+    {
+        lpNode->SaveToStream( lpOutputPtr );
+    }
+
+    FILE* lpOutputFile = nullptr;
+    fopen_s( &lpOutputFile, lpFilename, "wb" );
+
+    if( !lpOutputFile )
+    {
+        eError leError = eError_FailedToCreateFile;
+        SHOW_ERROR_AND_RETURN_W( delete[] lpOutputData );
+    }
+
+    fwrite( lpOutputData, 1, lpOutputPtr - lpOutputData, lpOutputFile );
+    fclose( lpOutputFile );
+
+    delete[] lpOutputData;
+    return eError_NoError;
+}
+
+eError CDtaFile::AddTreeNode( CDtaNodeBase* lpParent, const char*& lpData, eNodeType leNodeType )
+{
+    int liNumChildren = *(short*)lpData;
+    lpData += sizeof( short );
+
+    if( liNumChildren <= 0 )
+    {
+        return eError_InvalidData;
+    }
+
+    short liNodeId = *(short*)lpData;
+    lpData += sizeof( short );
+
+    CDtaNodeBase* lpNode = nullptr;
+    if( !lpParent )
+    {
+        lpNode = &mRootNode;
+        lpNode->SetId( liNodeId );
+    }
+    else
+    {
+        lpNode = new CDtaNodeBase( lpParent, liNodeId );
+        lpParent->AddChild( lpNode );
+    }
+    lpNode->SetTypeOverride( leNodeType );
+
+    for( int ii = 0; ii < liNumChildren; ++ii )
+    {
+        int liType = *(int*)lpData;
+        lpData += sizeof( int );
+
+        switch( (eNodeType)liType )
+        {
+        case ENodeType_String:
+        case ENodeType_Filename:
+        case ENodeType_Define:
+        case ENodeType_Id:
+        {
+            int liStringLength = *(int*)lpData;
+            lpData += sizeof( int );
+            
+            if( liStringLength < 0 )
+            {
+                return eError_InvalidData;
+            }
+
+            if( liStringLength == 0 )
+            {
+                if( CDtaNodeBase* lpNewNode = lpNode->AddChild( std::string( "" ) ) )
+                {
+                    lpNewNode->SetTypeOverride( liType );
+                }
+            }
+            else
+            {
+                char* lpNewString = new char[ liStringLength + 1 ];
+                memcpy( lpNewString, lpData, liStringLength );
+                lpNewString[ liStringLength ] = 0;
+
+                if( CDtaNodeBase* lpNewNode = lpNode->AddChild( std::string( lpNewString ) ) )
+                {
+                    lpNewNode->SetTypeOverride( liType );
+                }
+
+                delete[] lpNewString;
+            }
+
+            lpData += liStringLength;
+        }
+        break;
+
+        case ENodeType_Tree2:
+        case ENodeType_Tree1:
+        {
+            lpData += sizeof( int );
+            eError leError = AddTreeNode( lpNode, lpData, (eNodeType)liType );
+            if( leError != eError_NoError )
+            {
+                return leError;
+            }
+        }
+        break;
+
+        case ENodeType_Integer0:
+        case ENodeType_Integer6:
+        case ENodeType_Integer8:
+        case ENodeType_Integer9:
+        {
+            int liValue = *(int*)lpData;
+            lpData += sizeof( int );
+
+            if( CDtaNodeBase* lpNewNode = lpNode->AddChild( liValue ) )
+            {
+                lpNewNode->SetTypeOverride( liType );
+            }
+        }
+        break;
+
+        case ENodeType_Float:
+        {
+            float lfValue = *(float*)lpData;
+            lpData += sizeof( float );
+
+            if( CDtaNodeBase* lpNewNode = lpNode->AddChild( lfValue ) )
+            {
+                lpNewNode->SetTypeOverride( liType );
+            }
+        }
+        break;
+
+        default:
+            return eError_InvalidData;
+        };
+    }
+
+    return eError_NoError;
+}
+
+eError CMoggsong::LoadMoggSong( const char* lpFilename )
 {
     FILE* lpInputFile = nullptr;
     fopen_s( &lpInputFile, lpFilename, "rb" );
@@ -48,7 +329,7 @@ eError CDtaFile::LoadMoggSong( const char* lpFilename )
     return eError_NoError;
 }
 
-eError CDtaFile::Save( const char* lpFilename ) const
+eError CMoggsong::Save( const char* lpFilename ) const
 {
     FILE* lpOutputFile = nullptr;
     fopen_s( &lpOutputFile, lpFilename, "rb" );
@@ -73,7 +354,7 @@ eError CDtaFile::Save( const char* lpFilename ) const
     
     unsigned char* lpDataPtr = lacData;
 
-    CDtaNodeBase lRoot( 1 );
+    CDtaNodeBase lRoot( nullptr, 1 );
 
     const short ksMoggPathNodeId = 1;
     CDtaNodeBase* lpMoggPathNode = lRoot.AddNode( ksMoggPathNodeId );
@@ -319,7 +600,7 @@ eError CDtaFile::Save( const char* lpFilename ) const
     return eError_NoError;
 }
 
-eError CDtaFile::ProcessMoggSongKey( char*& lpData )
+eError CMoggsong::ProcessMoggSongKey( char*& lpData )
 {
 #define IS_KEY( lpPossibleKey ) ( strstr( lpData, lpPossibleKey ) == lpData )
 
@@ -729,12 +1010,12 @@ void CDtaNodeBase::SaveToStream( unsigned char*& lpStream ) const
     WriteToStream< short >( lpStream, (short)maChildren.size() );
     WriteToStream< short >( lpStream, msNodeId );
 
-    for( std::list< CDtaNodeBase* >::const_iterator lIter = maChildren.begin(); lIter != maChildren.end(); ++lIter )
+    for( std::vector< CDtaNodeBase* >::const_iterator lIter = maChildren.begin(); lIter != maChildren.end(); ++lIter )
     {
         const CDtaNodeBase* lpChild = *lIter;
         if( lpChild->IsBaseNode() )
         {
-            WriteToStream< int >( lpStream, 16 );
+            WriteToStream< int >( lpStream, lpChild->miTypeOverride );
             WriteToStream< int >( lpStream, 1 );
         }
 

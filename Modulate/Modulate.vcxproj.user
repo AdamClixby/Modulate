@@ -13,10 +13,10 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>-ps3 -pack unpacked repacked</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-ps3 -listsongs unpacked</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerWorkingDirectory>D:\Amplitude\Amplitude [NPUB31810]\NPUB31810\USRDIR</LocalDebuggerWorkingDirectory>
-    <RemoteDebuggerCommandArguments>-ps3 -pack unpacked repacked</RemoteDebuggerCommandArguments>
+    <RemoteDebuggerCommandArguments>-ps3 -listsongs unpacked</RemoteDebuggerCommandArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LocalDebuggerCommandArguments>-ps3 -pack unpacked repacked</LocalDebuggerCommandArguments>

@@ -63,7 +63,7 @@ eError BuildSingleSong( std::deque< std::string >& laParams )
 
     std::string lFilename = lDirectory + CSettings::msPlatform + "/songs/" + lSongName + "/" + lSongName + ".moggsong";
 
-    CDtaFile lDataFile;
+    CMoggsong lDataFile;
     eError leError = lDataFile.LoadMoggSong( lFilename.c_str() );
     SHOW_ERROR_AND_RETURN;
 
@@ -406,6 +406,54 @@ eError Decode( std::deque< std::string >& laParams )
     return eError_NoError;
 }
 
+eError ListSongs( std::deque< std::string >& laParams )
+{
+    std::cout << "Loading ";
+    if( laParams.empty() )
+    {
+        return eError_InvalidParameter;
+    }
+    std::string lBasePath = laParams.front();
+    laParams.pop_front();
+    if( lBasePath.back() != '/' && lBasePath.back() != '\\' )
+    {
+        lBasePath += "/";
+    }
+
+    std::string lAmpConfigPath = lBasePath + CSettings::msPlatform + "/config/amp_config.dta_dta_" + CSettings::msPlatform;
+    std::cout << lAmpConfigPath.c_str() << "\n";
+
+    CDtaFile lAmpConfig;
+    eError leError = lAmpConfig.Load( lAmpConfigPath.c_str() );
+    if( leError != eError_NoError )
+    {
+        SHOW_ERROR_AND_RETURN;
+    }
+
+    std::string lAmpSongsConfigPath = lBasePath + CSettings::msPlatform + "/config/amp_songs_config.dta_dta_" + CSettings::msPlatform;
+    std::cout << "Loading " << lAmpSongsConfigPath.c_str() << "\n";
+
+    CDtaFile lSongsConfig;
+    leError = lSongsConfig.Load( lAmpSongsConfigPath.c_str() );
+    if( leError != eError_NoError )
+    {
+        SHOW_ERROR_AND_RETURN;
+    }
+
+    int ii = 1;
+    std::vector< SSongConfig > lSongs = lAmpConfig.GetSongs();
+    for( auto& lSong : lSongs )
+    {
+        std::cout << "Song " << ii << "\t - " << lSong.mId << " - " << lSong.mName << "\n";
+        ++ii;
+    }
+
+    //lAmpConfigPath.append( ".out" );
+    //lAmpConfig.Save( lAmpConfigPath.c_str() );
+
+    return eError_NoError;
+}
+
 void PrintUsage()
 {
     std::cout << "Usage: Modulate.exe <options> <commands>\n\n";
@@ -416,6 +464,10 @@ void PrintUsage()
     std::cout << "-unpack <out_dir>\t\t\t\tUnpack the contents of the .ark file(s) to <out_dir>\n";
     std::cout << "-pack <in_dir> <out_dir>\t\t\tRepack data into an .ark file\n";
     std::cout << "-replace <data_dir> <old_song> <new_song>\tReplace <old_song> with the song from <new_song>\n\t\t\t\t\t\tRequires <new_song.mid> <new_song.mogg> <new_song.moggsong>\n";
+    std::cout << "-buildsong <data_dir> <song_name>\t\tBuild <song_name> binary data from <song_name.moggsong>\n";
+    std::cout << "-buildsongs <data_dir>\t\t\tBuild binary data for all songs from their .moggsong (tutorials excluded)\n";
+    std::cout << "-decode <data_dir>\t\t\tDecode the .hdr file\n";
+    std::cout << "-listsongs <data_dir>\t\t\tList all songs from the game\n";
 }
 
 eError PS3( std::deque< std::string >& laParams )
@@ -443,6 +495,7 @@ int main( int argc, char *argv[], char *envp[] )
         "-buildsongs",  BuildSongs,
         "-pack",        Pack,
         "-decode",      Decode,
+        "-listsongs",   ListSongs,
         nullptr,        nullptr,
     };
 
