@@ -102,32 +102,23 @@ eError BuildSingleSong( std::deque< std::string >& laParams )
     fread( lpMidiData, liMidiFileSize, 1, lpMidiFile );
     fclose( lpMidiFile );
 
-    if( CSettings::mbPS4 )
-    {
-    }
-    else
-    {
-        //// Is this necessary?
-        //lpMidiData[ 0x2A ] = ( liMidiBPM >> 16 ) & 0xFF;
-        //lpMidiData[ 0x2B ] = ( liMidiBPM >> 8 ) & 0xFF;
-        //lpMidiData[ 0x2C ] = ( liMidiBPM >> 0 ) & 0xFF;
-    }
-
     int64_t lTerminator = CSettings::mbPS4 ? 0x01abcdabcdabcdab : 0xcdabcdabcdabcdab;
     unsigned char* lpDataPtr = lpMidiData + liMidiFileSize - 1024;
-    do
+    while( lpDataPtr < lpMidiData + liMidiFileSize &&
+            *lpDataPtr != 0xAB )
     {
-        while( lpDataPtr < lpMidiData + liMidiFileSize &&
-              *lpDataPtr != 0xAB )
-        {
-            ++lpDataPtr;
-        }
+        ++lpDataPtr;
 
         if( lpDataPtr == lpMidiData + liMidiFileSize )
         {
             return eError_InvalidData;
         }
-    } while( lpDataPtr >= lpMidiData && *(int64_t*)lpDataPtr != lTerminator );
+    }
+
+    if( *(int64_t*)lpDataPtr != lTerminator )
+    {
+        return eError_InvalidData;
+    }
 
     lpDataPtr += 19;
     if( CSettings::mbPS4 )
@@ -477,7 +468,7 @@ void PrintUsage()
     std::cout << "\nCommands:\n";
     std::cout << "-unpack <out_dir>\t\t\t\tUnpack the contents of the .ark file(s) to <out_dir>\n";
     std::cout << "-pack <in_dir> <out_dir>\t\t\tRepack data into an .ark file, ignoring new files\n";
-    std::cout << "-addpack <in_dir> <out_dir>\t\t\tRepack data into an .ark file, adding new files\n";
+    std::cout << "-pack_add <in_dir> <out_dir>\t\t\tRepack data into an .ark file, adding new files\n";
     std::cout << "-replace <data_dir> <old_song> <new_song>\tReplace <old_song> with the song from <new_song>\n\t\t\t\t\t\tRequires <new_song.mid> <new_song.mogg> <new_song.moggsong>\n";
     std::cout << "-buildsong <data_dir> <song_name>\t\tBuild <song_name> binary data from <song_name.moggsong>\n";
     std::cout << "-buildsongs <data_dir>\t\t\t\tBuild binary data for all songs from their .moggsong (tutorials excluded)\n";
@@ -624,7 +615,7 @@ int main( int argc, char *argv[], char *envp[] )
         "-buildsong",   BuildSingleSong,
         "-buildsongs",  BuildSongs,
         "-pack",        Pack,
-        "-addpack",     AddPack,
+        "-pack_add",    AddPack,
         "-decode",      Decode,
         "-listsongs",   ListSongs,
         "-addsong",     AddSong,

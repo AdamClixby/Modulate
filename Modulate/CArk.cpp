@@ -79,7 +79,7 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
     delete[] mpFiles;
     mpFiles = new sFileDefinition[ miNumFiles + liNumDuplicates + liNumFakes ];
 
-    unsigned int luTotalFileSize = 0;
+    unsigned __int64 luTotalFileSize = 0;
 
     sFileDefinition* lpFileDef = mpFiles;
 
@@ -160,7 +160,7 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
     delete[] mpArks;
     mpArks = new sArkDefinition[ miNumArks ];
 
-    unsigned int luSizeRemaining = luTotalFileSize;
+    unsigned __int64 luSizeRemaining = luTotalFileSize;
     for( int ii = 0; ii < miNumArks; ++ii )
     {
         mpArks[ ii ] = lReferenceHeader.mpArks[ ii ];
@@ -709,10 +709,11 @@ eError CArk::BuildArk( const char* lpInputDirectory )
 {
     VERBOSE_OUT( "Building ark\n" );
 
-    unsigned int luTotalArkSize = 0;
+    unsigned __int64 luTotalArkSize = 0;
     sFileDefinition* lpFileDef = mpFiles;
     for( int ii = 0; ii < miNumFiles; ++ii, ++lpFileDef )
     {
+        //assert( lpFileDef->miSize > 0 );
         luTotalArkSize += lpFileDef->miSize;
     }
 

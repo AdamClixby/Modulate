@@ -13,15 +13,15 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>-ps3 -unpack unpacked -addsong unpacked phantams -listsongs unpacked -addpack unpacked D:\Amplitude\RPCS3\dev_hdd0\game\NPUB31810\USRDIR</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-pack_add unpacked repacked -listsongs unpacked</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerWorkingDirectory>D:\Amplitude\Amplitude [NPUB31810]\NPUB31810\USRDIR</LocalDebuggerWorkingDirectory>
-    <RemoteDebuggerCommandArguments>-ps3 -unpack unpacked -addsong unpacked phantams -listsongs unpacked -addpack unpacked D:\Amplitude\RPCS3\dev_hdd0\game\NPUB31810\USRDIR</RemoteDebuggerCommandArguments>
+    <LocalDebuggerWorkingDirectory>C:\Dev\Amplitude\Game - PS4\CUSA02480</LocalDebuggerWorkingDirectory>
+    <RemoteDebuggerCommandArguments>-pack_add unpacked repacked -listsongs unpacked</RemoteDebuggerCommandArguments>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerCommandArguments>-ps3 -addsong unpacked kerosene -listsongs unpacked -addpack unpacked D:\Amplitude\RPCS3\dev_hdd0\game\NPUB31810\USRDIR</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-addsong unpacked baldwinbros -addsong unpacked baseline -addsong unpacked bowie -addsong unpacked garbage -addsong unpacked logan7 -addsong unpacked mekon -addsong unpacked paparoach -addsong unpacked pink -addsong unpacked pod -addsong unpacked rockit -addsong unpacked rockstar -addsong unpacked rundmc -addsong unpacked shades_of_blue -addsong unpacked supersprode -addsong unpacked weezer -pack_add unpacked repacked -listsongs unpacked</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerWorkingDirectory>D:\Amplitude\Amplitude [NPUB31810]\NPUB31810\USRDIR</LocalDebuggerWorkingDirectory>
-    <RemoteDebuggerCommandArguments>-ps3 -addsong unpacked kerosene -listsongs unpacked -addpack unpacked D:\Amplitude\RPCS3\dev_hdd0\game\NPUB31810\USRDIR</RemoteDebuggerCommandArguments>
+    <LocalDebuggerWorkingDirectory>C:\Dev\Amplitude\Game - PS4\CUSA02480</LocalDebuggerWorkingDirectory>
+    <RemoteDebuggerCommandArguments>-addsong unpacked baldwinbros -addsong unpacked baseline -addsong unpacked bowie -addsong unpacked garbage -addsong unpacked logan7 -addsong unpacked mekon -addsong unpacked paparoach -addsong unpacked pink -addsong unpacked pod -addsong unpacked rockit -addsong unpacked rockstar -addsong unpacked rundmc -addsong unpacked shades_of_blue -addsong unpacked supersprode -addsong unpacked weezer -pack_add unpacked repacked -listsongs unpacked</RemoteDebuggerCommandArguments>
   </PropertyGroup>
 </Project>

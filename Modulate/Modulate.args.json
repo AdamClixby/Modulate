@@ -11,28 +11,80 @@
       "Command": "-unpack unpacked"
     },
     {
-      "Id": "8f652493-2dd4-47e3-98f7-fe0409629161",
-      "Command": "-replace unpacked concept kerosene"
+      "Id": "dd859710-3395-468c-a666-9eba4389fe5a",
+      "Command": "-addsong unpacked baldwinbros"
     },
     {
-      "Id": "898fa730-e6a4-4f36-ae01-a6e95a6f4322",
-      "Command": "-addsong unpacked phantams"
+      "Id": "e1d8fd38-f2ce-47d7-b6f5-1712d49297c6",
+      "Command": "-addsong unpacked baseline"
+    },
+    {
+      "Id": "34dcee0c-dc7f-40ba-825f-2fb0f745fa9c",
+      "Command": "-addsong unpacked bowie"
+    },
+    {
+      "Id": "84f3e6b6-20c3-46b7-a2dd-63e4005a6be7",
+      "Command": "-addsong unpacked garbage"
     },
     {
       "Id": "69977596-dff1-4757-b88a-c20b218e0e7d",
       "Command": "-addsong unpacked kerosene"
     },
     {
-      "Id": "6f757290-2840-42c7-bc6a-e7ac02f5b7cf",
-      "Command": "-listsongs unpacked"
+      "Id": "00ef2c75-cd13-47ad-872f-1433e5450423",
+      "Command": "-addsong unpacked logan7"
+    },
+    {
+      "Id": "efa371f7-c8e0-4c60-8792-56665d0da375",
+      "Command": "-addsong unpacked mekon"
+    },
+    {
+      "Id": "84343b76-014d-4a60-82c8-90f135627a5c",
+      "Command": "-addsong unpacked paparoach"
+    },
+    {
+      "Id": "15a1ff5e-d848-4643-adcf-315399707c8b",
+      "Command": "-addsong unpacked pink"
+    },
+    {
+      "Id": "01a6beea-1b45-453b-b974-67be0b3e20cc",
+      "Command": "-addsong unpacked pod"
+    },
+    {
+      "Id": "c0229e69-6f5d-4b2b-a226-91ce5884271f",
+      "Command": "-addsong unpacked rockit"
+    },
+    {
+      "Id": "6b143c83-5503-4c48-86da-29ba4ca6e47c",
+      "Command": "-addsong unpacked rockstar"
+    },
+    {
+      "Id": "2d8324e2-efe9-467f-9941-983b35715970",
+      "Command": "-addsong unpacked rundmc"
+    },
+    {
+      "Id": "6cd7376e-3c61-45ad-99a0-00aa9576cd79",
+      "Command": "-addsong unpacked shades_of_blue"
+    },
+    {
+      "Id": "c5648dd0-13c9-4999-a6ba-62dcadc129de",
+      "Command": "-addsong unpacked supersprode"
+    },
+    {
+      "Id": "e3643893-ab72-45cc-ac11-b8e67cb77f04",
+      "Command": "-addsong unpacked weezer"
     },
     {
       "Id": "eec23900-8bfd-43ae-a108-296d12238a97",
       "Command": "-pack unpacked repacked"
     },
     {
-      "Id": "2fc952c8-3079-42c9-b0c2-b3ffdbcdb2cb",
-      "Command": "-addpack unpacked D:\\Amplitude\\RPCS3\\dev_hdd0\\game\\NPUB31810\\USRDIR"
+      "Id": "dad65b47-5bb3-446a-942b-81c24aa7aa68",
+      "Command": "-pack_add unpacked repacked"
+    },
+    {
+      "Id": "6f757290-2840-42c7-bc6a-e7ac02f5b7cf",
+      "Command": "-listsongs unpacked"
     }
   ]
 }
