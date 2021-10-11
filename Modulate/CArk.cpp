@@ -164,7 +164,7 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
     for( int ii = 0; ii < miNumArks; ++ii )
     {
         mpArks[ ii ] = lReferenceHeader.mpArks[ ii ];
-        mpArks[ ii ].muSize = luSizeRemaining / ( miNumArks - ii );
+        mpArks[ ii ].muSize = (unsigned int)( luSizeRemaining / ( miNumArks - ii ) );
         luSizeRemaining -= mpArks[ ii ].muSize;
     }
 
