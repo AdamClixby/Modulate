@@ -898,12 +898,13 @@ eError CMoggsong::ProcessMoggSongKey( char*& lpData )
         return lReadInt( miCountIn );
     }
 
-    if( maTracks.empty() && strstr( lpData, "tracks" ) == lpData )
+    constexpr char kpTracksId[] = "tracks";
+    if( maTracks.empty() && strstr( lpData, kpTracksId ) == lpData )
     {
-        lpData += strlen( lpData ) + 1;
+        lpData += strlen( kpTracksId ) + 1;
 
         char* lpTrackGroup = strstr( lpData, "(" );
-        if( !lpTrackGroup )
+        if( !lpTrackGroup ) 
         {
             return eError_InvalidData;
         }
@@ -916,7 +917,7 @@ eError CMoggsong::ProcessMoggSongKey( char*& lpData )
             char* lpTrackNameEnd = strstr( lpTrack, " " );
             if( !lpTrackNameEnd )
             {
-                return eError_InvalidData;
+                lpTrackNameEnd = lpTrack + strlen( lpTrack );
             }
             *lpTrackNameEnd = 0;
 
