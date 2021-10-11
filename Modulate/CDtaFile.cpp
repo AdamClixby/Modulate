@@ -995,6 +995,11 @@ eError CMoggsong::ProcessMoggSongKey( char*& lpData )
                 ++lpPan;
             }
 
+            if( lpPan >= lpPansEnd )
+            {
+                break;
+            }
+
             if( liTrackIndex >= maTracks.size() )
             {
                 return eError_InvalidData;
