@@ -497,9 +497,10 @@ eError CMoggsong::LoadMoggSong( const char* lpFilename )
     int liFileSize = ftell( lpInputFile );
     fseek( lpInputFile, 0, SEEK_SET );
 
-    char* lpInputData = new char[ liFileSize ];
+    char* lpInputData = new char[ liFileSize + 1 ];
     fread( lpInputData, liFileSize, 1, lpInputFile );
     fclose( lpInputFile );
+    lpInputData[ liFileSize ] = 0;
 
     char* lpDataPtr = lpInputData;
 
@@ -515,7 +516,7 @@ eError CMoggsong::LoadMoggSong( const char* lpFilename )
         }
 
         *lpKeyEnd = 0;
-        eError leError = ProcessMoggSongKey( lpDataPtr );
+        eError leError = ProcessMoggSongKey( lpDataPtr, liFileSize - ( lpDataPtr - lpInputData ) );
         SHOW_ERROR_AND_RETURN_W( delete[] lpInputData );
     } while( lpDataPtr - lpInputData < liFileSize - 10 );
 
@@ -795,9 +796,36 @@ eError CMoggsong::Save( const char* lpFilename ) const
     return eError_NoError;
 }
 
-eError CMoggsong::ProcessMoggSongKey( char*& lpData )
+eError CMoggsong::ProcessMoggSongKey( char*& lpData, __int64 liDataSize )
 {
+    const char* lpInitialDataPtr = lpData;
+    const char* lpDataEnd = lpData + liDataSize;
+
+    while( lpData < lpDataEnd &&
+           *lpData != '(' &&
+           ( *lpData < 'a' || *lpData > 'z' ) )
+    {
+        ++lpData;
+    }
+
 #define IS_KEY( lpPossibleKey ) ( strstr( lpData, lpPossibleKey ) == lpData )
+
+    auto lFindChar = []( char* lpData, _int64 liDataSize, char lpChar )
+    {
+        char* lpSearch = lpData;
+        const char* lpEnd = lpData + liDataSize;
+        while( *lpSearch != lpChar && lpSearch != lpEnd )
+        {
+            ++lpSearch;
+        }
+
+        if( lpSearch - lpData == liDataSize )
+        {
+            return (char*)nullptr;
+        }
+
+        return lpSearch;
+    };
 
     auto lReadString = [&]( std::string& lString )
     {
@@ -827,6 +855,11 @@ eError CMoggsong::ProcessMoggSongKey( char*& lpData )
 
         lpData = lpPathEndAlt;
 
+        if( lpData >= lpDataEnd )
+        {
+            return eError_NoData;
+        }
+
         return eError_NoError;
     };
 
@@ -835,20 +868,24 @@ eError CMoggsong::ProcessMoggSongKey( char*& lpData )
         return lReadString( mMoggPath );
     }
 
-    if( mMidiPath.empty() && strstr( lpData, "midi_path" ) == lpData )
+    if( mMidiPath.empty() && IS_KEY( "midi_path" ) )
     {
         return lReadString( mMidiPath );
     }
 
-    if( strstr( lpData, "song_info" ) == lpData )
+    if( IS_KEY( "song_info" ) )
     {
         char* lpNewDataPtr;
         do
         {
-            lpNewDataPtr = strstr( lpData, "(" );
+            lpNewDataPtr = lFindChar( lpData, liDataSize, '(' );
             if( !lpNewDataPtr )
             {
                 lpData += strlen( lpData ) + 1;
+                if( lpData >= lpDataEnd )
+                {
+                    return eError_NoData;
+                }
             }
         } while( !lpNewDataPtr );
 
@@ -856,7 +893,7 @@ eError CMoggsong::ProcessMoggSongKey( char*& lpData )
         return eError_NoError;
     }
 
-    if( miLength == 0 && strstr( lpData, "length" ) == lpData )
+    if( miLength == 0 && IS_KEY( "length" ) )
     {
         std::string lLengthString;
         eError leError = lReadString( lLengthString );
@@ -893,28 +930,34 @@ eError CMoggsong::ProcessMoggSongKey( char*& lpData )
         return eError_NoError;
     };
 
-    if( miCountIn == 0 && strstr( lpData, "countin" ) == lpData )
+    if( miCountIn == 0 && IS_KEY( "countin" ) )
     {
         return lReadInt( miCountIn );
     }
 
     constexpr char kpTracksId[] = "tracks";
-    if( maTracks.empty() && strstr( lpData, kpTracksId ) == lpData )
+    if( maTracks.empty() && IS_KEY( kpTracksId ) )
     {
         lpData += strlen( kpTracksId ) + 1;
 
-        char* lpTrackGroup = strstr( lpData, "(" );
-        if( !lpTrackGroup ) 
+        char* lpTrackGroup = lFindChar( lpData, liDataSize - ( lpData - lpInitialDataPtr ), '(' );
+        if( !lpTrackGroup )
         {
             return eError_InvalidData;
         }
+        ++lpTrackGroup;
 
-        char* lpTrack = strstr( lpTrackGroup + 1, "(" );
+        if( lpTrackGroup >= lpDataEnd )
+        {
+            return eError_NoData;
+        }
+
+        char* lpTrack = lFindChar( lpTrackGroup, liDataSize - ( lpTrackGroup - lpInitialDataPtr ), '(' );
         while( lpTrack )
         {
             ++lpTrack;
 
-            char* lpTrackNameEnd = strstr( lpTrack, " " );
+            char* lpTrackNameEnd = lFindChar( lpTrack, liDataSize - ( lpTrack - lpInitialDataPtr ), ' ' );
             if( !lpTrackNameEnd )
             {
                 lpTrackNameEnd = lpTrack + strlen( lpTrack );
@@ -925,14 +968,19 @@ eError CMoggsong::ProcessMoggSongKey( char*& lpData )
             maTracks.back().mName = lpTrack;
 
             lpTrack += strlen( lpTrack ) + 1;
-            lpTrack = strstr( lpTrack, "(" );
+            lpTrack = lFindChar( lpTrack, liDataSize - ( lpTrack - lpInitialDataPtr ), '(' );
             if( !lpTrack )
             {
                 return eError_InvalidData;
             }
             ++lpTrack;
 
-            char* lpChannelsEnd = strstr( lpTrack, ")" );
+            if( lpTrack >= lpDataEnd )
+            {
+                return eError_NoData;
+            }
+
+            char* lpChannelsEnd = lFindChar( lpTrack, liDataSize - ( lpTrack - lpInitialDataPtr ), ')' );
             if( !lpChannelsEnd )
             {
                 return eError_InvalidData;
@@ -945,14 +993,20 @@ eError CMoggsong::ProcessMoggSongKey( char*& lpData )
             } while( lpTrack < lpChannelsEnd );
 
             lpTrack = lpChannelsEnd + 1;
-            char* lpEventName = strstr( lpTrack, " " );
+
+            if( lpTrack >= lpDataEnd )
+            {
+                return eError_NoData;
+            }
+
+            char* lpEventName = lFindChar( lpTrack, liDataSize - ( lpTrack - lpInitialDataPtr ), ' ' );
             if( !lpEventName )
             {
                 return eError_InvalidData;
             }
             ++lpEventName;
 
-            char* lpEventNameEnd = strstr( lpEventName, ")" );
+            char* lpEventNameEnd = lFindChar( lpEventName, liDataSize - ( lpEventName - lpInitialDataPtr ), ')' );
             if( !lpEventNameEnd )
             {
                 return eError_InvalidData;
@@ -963,8 +1017,13 @@ eError CMoggsong::ProcessMoggSongKey( char*& lpData )
 
             lpData = lpEventNameEnd + 1;
 
-            char* lpEnd = strstr( lpData, ")" );
-            lpTrack = strstr( lpData, "(" );
+            if( lpData >= lpDataEnd )
+            {
+                return eError_NoData;
+            }
+
+            char* lpEnd = lFindChar( lpData, liDataSize - ( lpData - lpInitialDataPtr ), ')' );
+            lpTrack = lFindChar( lpData, liDataSize - ( lpData - lpInitialDataPtr ), '(' );
 
             if( lpEnd < lpTrack )
             {
@@ -980,10 +1039,10 @@ eError CMoggsong::ProcessMoggSongKey( char*& lpData )
     {
         int liTrackIndex = 0;
         int liPanIndex = 0;
-        char* lpPan = strstr( lpData + strlen( lpData ) + 1, "(" );
+        char* lpPan = lFindChar( lpData, liDataSize - ( lpData - lpInitialDataPtr ), '(' );
         ++lpPan;
 
-        char* lpPansEnd = strstr( lpPan, ")" );
+        char* lpPansEnd = lFindChar( lpPan, liDataSize - ( lpPan - lpInitialDataPtr ), ')' );
         if( !lpPansEnd )
         {
             return eError_InvalidData;
@@ -1017,7 +1076,11 @@ eError CMoggsong::ProcessMoggSongKey( char*& lpData )
                 liPanIndex = 0;
             }
 
-            lpPan = strstr( lpPan, " " ) + 1;
+            lpPan = lFindChar( lpPan, liDataSize - ( lpPan - lpInitialDataPtr ), ' ' );
+            if( !lpPan )
+            {
+                break;
+            }
         } while( lpPan < lpPansEnd );
 
         lpData = lpPansEnd + 1;
@@ -1025,12 +1088,12 @@ eError CMoggsong::ProcessMoggSongKey( char*& lpData )
         return eError_NoError;
     };
 
-    if( !maTracks.empty() && maTracks.front().maPans.empty() && strstr( lpData, "pans" ) == lpData )
+    if( !maTracks.empty() && maTracks.front().maPans.empty() && IS_KEY( "pans" ) )
     {
         return lSaveArrayToTracks( []( sTrackDefinition* lTrack, float lfValue ) { lTrack->maPans.push_back( lfValue );  } );
     }
 
-    if( !maTracks.empty() && maTracks.front().maVolumes.empty() && strstr( lpData, "vols" ) == lpData )
+    if( !maTracks.empty() && maTracks.front().maVolumes.empty() && IS_KEY( "vols" ) )
     {
         return lSaveArrayToTracks( []( sTrackDefinition* lTrack, float lfValue ) { lTrack->maVolumes.push_back( lfValue );  } );
     }
@@ -1056,12 +1119,12 @@ eError CMoggsong::ProcessMoggSongKey( char*& lpData )
         return eError_NoError;
     };
 
-    if( maActiveTrackDB.empty() && strstr( lpData, "active_track_db" ) == lpData )
+    if( maActiveTrackDB.empty() && IS_KEY( "active_track_db" ) )
     {
         return lSaveFloatArray( [ & ]( float lfValue ) { maActiveTrackDB.push_back( lfValue ); } );
     }
 
-    if( mArenaPath.empty() && strstr( lpData, "arena_path" ) == lpData )
+    if( mArenaPath.empty() && IS_KEY( "arena_path" ) )
     {
         return lReadString( mArenaPath );
     }
@@ -1116,7 +1179,7 @@ eError CMoggsong::ProcessMoggSongKey( char*& lpData )
         return eError_NoError;
     }
 
-    if( mfTunnelScale == 0.0f && strstr( lpData, "tunnel_scale" ) == lpData )
+    if( mfTunnelScale == 0.0f && IS_KEY( "tunnel_scale" ) )
     {
         std::string lScaleString;
         eError leError = lReadString( lScaleString );

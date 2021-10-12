@@ -214,7 +214,7 @@ public:
     const std::string& GetTitle() const { return mTitle; }
 
 private:
-    eError ProcessMoggSongKey( char*& lpKey );
+    eError ProcessMoggSongKey( char*& lpData, __int64 liDataSize );
 
     bool mbLoadingTrackData = false; // TODO - move to moggsongloader class
 
