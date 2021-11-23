@@ -197,7 +197,7 @@ eError CDtaFile::SetSongs( const std::vector< SSongConfig >& laSongs )
     static std::string lSongExtra( "CAMPVO_song_extra" );
 
     static std::string lUnlockMethod( "play_num" );
-    static std::string lType( "kUnlockExtraSong" );
+    static std::string lType( "kUnlockArena" );
 
     CDtaNodeBase* lpUnlockListNode = lpCampaignNode->GetParent();
     CDtaNodeBase* lpSongsNode = lpUnlockTokensNode->GetParent();
