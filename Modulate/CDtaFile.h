@@ -29,6 +29,7 @@ struct SSongConfig
     std::string mUnlockMethod = "";
     std::string mType = "";
     std::string mPath = "";
+    std::string mArena = "";
     int miUnlockCount = -1;
 };
 
@@ -212,6 +213,7 @@ public:
 
     float GetBPM() const { return mfBPM; }
     const std::string& GetTitle() const { return mTitle; }
+    const std::string& GetArenaName() const { return mArenaName; }
 
 private:
     eError ProcessMoggSongKey( char*& lpData, __int64 liDataSize );
@@ -253,6 +255,7 @@ private:
     std::vector< float > maActiveTrackDB;
 
     std::string mArenaPath = "";
+    std::string mArenaName = "";
     
     enum eDifficulty {
         eDifficulty_Beginner,

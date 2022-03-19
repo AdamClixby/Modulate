@@ -210,10 +210,6 @@ eError CDtaFile::SetSongs( const std::vector< SSongConfig >& laSongs )
             continue;
         }
 
-        //CDtaNodeBase* lpNode = lpSongsNode->FindNode( "PHANTOMS" );
-        //dynamic_cast<CDtaNode<std::string>*>( lpNode )->SetValue( lSong.mId );
-        //dynamic_cast<CDtaNode<std::string>*>( lpNode->GetParent()->GetChildren()[ 1 ] )->SetValue( lSong.mName );
-
         // new song
         {
             CDtaNodeBase* lpNewSongNode = new CDtaNodeBase( lpSongsNode, liNextNodeId++ );
@@ -228,9 +224,6 @@ eError CDtaFile::SetSongs( const std::vector< SSongConfig >& laSongs )
             }
             lpSongsNode->AddChild( lpNewSongNode );
         }
-
-        //lpNode = lpUnlockListNode->FindNode( "PHANTOMS" );
-        //dynamic_cast<CDtaNode<std::string>*>( lpNode )->SetValue( lSong.mId );
 
         // unlock data
         {
@@ -265,6 +258,18 @@ void CDtaFile::GetSongData( std::vector< SSongConfig >& laSongs ) const
             continue;
         }
 
+        CDtaNodeBase* lpArenaNode = lpSongNode->GetParent();
+        if( lpArenaNode )
+        {
+            if( lpArenaNode->GetChildren().size() > 0 )
+            {
+                if( CDtaNode<std::string>* lpArenaName = dynamic_cast<CDtaNode<std::string>*>( lpArenaNode->GetChildren()[ 0 ] ) )
+                {
+                    lSong.mArena = lpArenaName->GetValue();
+                }
+            }
+        }
+
         CDtaNode<std::string>* lpPathNode = dynamic_cast<CDtaNode<std::string>*>( lpSongNode->GetChildren()[ ESongData_Path ] );
         lSong.mPath = lpPathNode->GetValue();
 
@@ -293,26 +298,17 @@ eError CDtaFile::UpdateSongData( const std::vector< SSongConfig >& laSongs )
         }
 
         // New song
-        int liWorldIndex = 0;// std::hash<std::string>{}( lSong.mId ) % 3;
-        char laIndex[ 4 ];
-        _itoa( liWorldIndex + 1, laIndex, 10 );
-
-        std::string lWorldName = "World";
-        lWorldName.append( laIndex );
-
-        CDtaNodeBase* lpWorldNode = mRootNode.FindNode( lWorldName );
+        CDtaNodeBase* lpWorldNode = mRootNode.FindNode( lSong.mArena );
+        if( !lpWorldNode )
+        {
+            lpWorldNode = mRootNode.FindNode( "World1" );
+        }
         if( !lpWorldNode )
         {
             return eError_InvalidData;
         }
 
         CDtaNodeBase* lpWorldGroupNode = lpWorldNode->GetParent();
-
-        //CDtaNodeBase* lpNewSongNode = lpWorldGroupNode->GetChildren()[ 6 ];
-        //{
-        //    dynamic_cast<CDtaNode<std::string>*>( lpNewSongNode->GetChildren()[ 0 ] )->SetValue( lSong.mId );
-        //    dynamic_cast<CDtaNode<std::string>*>( lpNewSongNode->GetChildren()[ 1 ] )->SetValue( lSong.mPath );
-        //}
 
         CDtaNodeBase* lpNewSongNode = new CDtaNodeBase( lpWorldGroupNode, liNextNodeId++ );
         lpNewSongNode->SetTypeOverride( ENodeType_Tree1 );
@@ -1127,6 +1123,11 @@ eError CMoggsong::ProcessMoggSongKey( char*& lpData, __int64 liDataSize )
     if( mArenaPath.empty() && IS_KEY( "arena_path" ) )
     {
         return lReadString( mArenaPath );
+    }
+
+    if( mArenaName.empty() && IS_KEY( "arena" ) )
+    {
+        return lReadString( mArenaName );
     }
 
     if( maScoreGoals[ 0 ][ 0 ] == 0 && strstr( lpData, "score_goal" ) == lpData )

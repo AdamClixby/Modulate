@@ -449,7 +449,7 @@ eError ListSongs( std::deque< std::string >& laParams )
     lSongsConfig.GetSongData( lSongs );
     for( auto& lSong : lSongs )
     {
-        std::cout << "Song " << ii << "\t  " << lSong.mId << " - " << lSong.mName << " - " << lSong.mType << "\n\t  " << lSong.mPath << "\n\t  Unlocked by " << lSong.mUnlockMethod << " " << lSong.miUnlockCount << "\n\n";
+        std::cout << "Song " << ii << "\t  " << lSong.mId << " - " << lSong.mName << " - " << lSong.mType << "\n\t  " << lSong.mPath << "\n\t  Unlocked by " << lSong.mUnlockMethod << " " << lSong.miUnlockCount << "\n" << "\t  Arena: " << lSong.mArena << "\n\n";
         ++ii;
     }
 
@@ -563,6 +563,7 @@ eError AddSong( std::deque< std::string >& laParams )
     lNewSong.mType = "kSongExtra";
     lNewSong.mPath = "../Songs/" + lSongId + "/" + lSongId + ".moggsong";
     lNewSong.miUnlockCount = 0;
+    lNewSong.mArena = lMoggFile.GetArenaName();
 
     laSongs.push_back( lNewSong );
 

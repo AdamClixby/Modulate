@@ -3,25 +3,27 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LocalDebuggerCommandArguments>
     </LocalDebuggerCommandArguments>
-    <LocalDebuggerWorkingDirectory>C:\Users\Adam\Desktop\Amp\Amplitude [NPUB31810]\NPUB31810\USRDIR</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerWorkingDirectory>C:\Dev\Amplitude\Game - PS3\NPUB31810\USRDIR</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LocalDebuggerCommandArguments>
     </LocalDebuggerCommandArguments>
-    <LocalDebuggerWorkingDirectory>C:\Users\Adam\Desktop\Amp\Amplitude [NPUB31810]\NPUB31810\USRDIR</LocalDebuggerWorkingDirectory>
+    <LocalDebuggerWorkingDirectory>C:\Dev\Amplitude\Game - PS3\NPUB31810\USRDIR</LocalDebuggerWorkingDirectory>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>-pack_add unpacked repacked -listsongs unpacked</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-ps3 -addsong unpacked baldwinbros -listsongs unpacked</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerWorkingDirectory>C:\Dev\Amplitude\Game - PS4\CUSA02480</LocalDebuggerWorkingDirectory>
-    <RemoteDebuggerCommandArguments>-pack_add unpacked repacked -listsongs unpacked</RemoteDebuggerCommandArguments>
+    <LocalDebuggerWorkingDirectory>C:\Dev\Amplitude\Game - PS3\NPUB31810\USRDIR</LocalDebuggerWorkingDirectory>
+    <RemoteDebuggerCommandArguments>-ps3 -addsong unpacked baldwinbros -listsongs unpacked</RemoteDebuggerCommandArguments>
+    <NXTargetName>Default</NXTargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerCommandArguments>-addsong unpacked baldwinbros -addsong unpacked baseline -addsong unpacked bowie -addsong unpacked garbage -addsong unpacked logan7 -addsong unpacked mekon -addsong unpacked paparoach -addsong unpacked pink -addsong unpacked pod -addsong unpacked rockit -addsong unpacked rockstar -addsong unpacked rundmc -addsong unpacked shades_of_blue -addsong unpacked supersprode -addsong unpacked weezer -pack_add unpacked repacked -listsongs unpacked</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-ps3 -addsong unpacked baldwinbros -listsongs unpacked</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
-    <LocalDebuggerWorkingDirectory>C:\Dev\Amplitude\Game - PS4\CUSA02480</LocalDebuggerWorkingDirectory>
-    <RemoteDebuggerCommandArguments>-addsong unpacked baldwinbros -addsong unpacked baseline -addsong unpacked bowie -addsong unpacked garbage -addsong unpacked logan7 -addsong unpacked mekon -addsong unpacked paparoach -addsong unpacked pink -addsong unpacked pod -addsong unpacked rockit -addsong unpacked rockstar -addsong unpacked rundmc -addsong unpacked shades_of_blue -addsong unpacked supersprode -addsong unpacked weezer -pack_add unpacked repacked -listsongs unpacked</RemoteDebuggerCommandArguments>
+    <LocalDebuggerWorkingDirectory>C:\Dev\Amplitude\Game - PS3\NPUB31810\USRDIR</LocalDebuggerWorkingDirectory>
+    <RemoteDebuggerCommandArguments>-ps3 -addsong unpacked baldwinbros -listsongs unpacked</RemoteDebuggerCommandArguments>
+    <NXTargetName>Default</NXTargetName>
   </PropertyGroup>
 </Project>
