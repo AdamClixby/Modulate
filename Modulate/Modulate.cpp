@@ -7,6 +7,10 @@
 #include <direct.h>
 #include <windows.h>
 #include <functional>
+#include <windows.h>
+#include <tchar.h> 
+#include <stdio.h>
+#include <strsafe.h>
 
 #include <deque>
 #include <algorithm>
@@ -46,9 +50,13 @@ eError EnableForceWrite( std::deque< std::string >& )
     return eError_NoError;
 }
 
-eError BuildSingleSong( std::deque< std::string >& laParams )
+eError BuildSingleSong( std::deque< std::string >& laParams, bool lbDoOutput = true )
 {
-    std::cout << "Building song ";
+    if( lbDoOutput )
+    {
+        std::cout << "Building song ";
+    }
+
     if( laParams.empty() )
     {
         return eError_InvalidParameter;
@@ -68,7 +76,11 @@ eError BuildSingleSong( std::deque< std::string >& laParams )
 
     std::string lSongName = laParams.front();
     laParams.pop_front();
-    std::cout << lSongName.c_str() << "\n";
+
+    if( lbDoOutput )
+    {
+        std::cout << lSongName.c_str() << "\n";
+    }
 
     std::string lFilename = lDirectory + CSettings::msPlatform + "/songs/" + lSongName + "/" + lSongName + ".moggsong";
 
@@ -81,7 +93,7 @@ eError BuildSingleSong( std::deque< std::string >& laParams )
 
     std::string lOutFilename = lFilename + "_dta_" + CSettings::msPlatform;
 
-    leError = lDataFile.Save( lOutFilename.c_str() );
+    leError = lDataFile.Save( lOutFilename.c_str(), lbDoOutput );
     SHOW_ERROR_AND_RETURN;
 
     int liMidiBPM = (int)roundf( 60000000.0f / lDataFile.GetBPM() );
@@ -136,7 +148,10 @@ eError BuildSingleSong( std::deque< std::string >& laParams )
         lpDataPtr[ 2 ] = ( liMidiBPM >> 0 ) & 0xFF;
     }
 
-    std::cout << "Writing " << lMidiFilename.c_str() << "\n";
+    if( lbDoOutput )
+    {
+        std::cout << "Writing " << lMidiFilename.c_str() << "\n";
+    }
 
     fopen_s( &lpMidiFile, lMidiFilename.c_str(), "wb" );
     if( !lpMidiFile )
@@ -149,9 +164,17 @@ eError BuildSingleSong( std::deque< std::string >& laParams )
 
     delete[] lpMidiData;
 
-    std::cout << "\n";
+    if( lbDoOutput )
+    {
+        std::cout << "\n";
+    }
 
     return eError_NoError;
+}
+
+eError BuildSingleSongCommand( std::deque< std::string >& laParams )
+{
+    return BuildSingleSong( laParams );
 }
 
 eError BuildSongs( std::deque< std::string >& laParams )
@@ -536,7 +559,6 @@ eError AddSong( std::deque< std::string >& laParams )
         SHOW_ERROR_AND_RETURN;
     }
 
-    int ii = 1;
     std::vector< SSongConfig > laSongs = lAmpConfig.GetSongs();
     lSongsConfig.GetSongData( laSongs );
 
@@ -600,6 +622,186 @@ eError AddSong( std::deque< std::string >& laParams )
     return eError_NoError;
 }
 
+eError AutoAddAllSongs( std::deque< std::string >& laParams )
+{
+    if( laParams.empty() )
+    {
+        return eError_InvalidParameter;
+    }
+
+    std::string lBasePath = laParams.front();
+    laParams.pop_front();
+    if( lBasePath.back() != '/' && lBasePath.back() != '\\' )
+    {
+        lBasePath += "/";
+    }
+
+    std::string lAmpConfigPath = lBasePath + CSettings::msPlatform + "/config/amp_config.dta_dta_" + CSettings::msPlatform;
+    std::cout << "Loading " << lAmpConfigPath.c_str() << "\n";
+
+    CDtaFile lAmpConfig;
+    eError leError = lAmpConfig.Load( lAmpConfigPath.c_str() );
+    if( leError != eError_NoError )
+    {
+        SHOW_ERROR_AND_RETURN;
+    }
+
+    std::string lAmpSongsConfigPath = lBasePath + CSettings::msPlatform + "/config/amp_songs_config.dta_dta_" + CSettings::msPlatform;
+    std::cout << "Loading " << lAmpSongsConfigPath.c_str() << "\n";
+
+    CDtaFile lSongsConfig;
+    leError = lSongsConfig.Load( lAmpSongsConfigPath.c_str() );
+    if( leError != eError_NoError )
+    {
+        SHOW_ERROR_AND_RETURN;
+    }
+
+    std::cout << "\nAdding all songs from " << lBasePath.c_str() << CSettings::msPlatform << "/songs/\n";
+
+    WIN32_FIND_DATAA lFindData;
+    std::string lSearchPath = lBasePath + CSettings::msPlatform + "/songs/*.*";
+    HANDLE lFindHandle = FindFirstFileA( lSearchPath.c_str(), &lFindData );
+
+    std::vector< SSongConfig > laSongs = lAmpConfig.GetSongs();
+    lSongsConfig.GetSongData( laSongs );
+
+    std::vector< std::string > laExistingSongNames;
+    for( const SSongConfig& lExistingSong : laSongs )
+    {
+        size_t liStartPos = lExistingSong.mPath.find( '/', 3 );
+        if( liStartPos == std::string::npos )
+        {
+            leError = eError_InvalidData;
+            SHOW_ERROR_AND_RETURN;
+        }
+
+        size_t liEndPos = lExistingSong.mPath.find( '/', 3 + liStartPos );
+        if( liEndPos == std::string::npos )
+        {
+            leError = eError_InvalidData;
+            SHOW_ERROR_AND_RETURN;
+        }
+
+        std::string lSongName = lExistingSong.mPath.substr( liStartPos + 1, liEndPos - liStartPos - 1 );
+        ToUpper( lSongName );
+        laExistingSongNames.push_back( lSongName );
+    }
+
+    std::vector< std::string > lSongDirectories;
+    do
+    {
+        if( ( lFindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) == 0 )
+        {
+            continue;
+        }
+
+        std::string lDirectoryName = lFindData.cFileName;
+        ToUpper( lDirectoryName );
+
+        if( lDirectoryName == "."    || lDirectoryName == ".."   || lDirectoryName == "TUT0" ||
+            lDirectoryName == "TUT1" || lDirectoryName == "TUT2" || lDirectoryName == "TUTC" )
+        {
+            continue;
+        }
+
+        bool lbAlreadyInSongList = false;
+        for( const std::string& lExistingSong : laExistingSongNames )
+        {
+            if( lExistingSong == lDirectoryName )
+            {
+                lbAlreadyInSongList = true;
+                break;
+            }
+        }
+
+        if( lbAlreadyInSongList )
+        {
+            continue;
+        }
+
+        std::string lFilename = lBasePath + CSettings::msPlatform + "/songs/" + lDirectoryName + "/" + lDirectoryName + ".moggsong";
+
+        CMoggsong lDataFile;
+        eError leError = lDataFile.LoadMoggSong( lFilename.c_str() );
+        if( leError != eError_NoError )
+        {
+            continue;
+        }
+
+        lSongDirectories.push_back( lDirectoryName );
+    } while( FindNextFileA( lFindHandle, &lFindData ) != 0 );
+
+    FindClose( lFindHandle );
+
+    if( lSongDirectories.empty() )
+    {
+        std::cout << "Found no new songs\n";
+        return eError_NoError;
+    }
+
+    for( const std::string& lSongName : lSongDirectories )
+    {
+        std::deque< std::string > lSingleSongParams;
+        lSingleSongParams.push_back( lBasePath );
+        lSingleSongParams.push_back( lSongName );
+
+        std::cout << "Building song " << lSongName << "\n";
+        BuildSingleSong( lSingleSongParams, false );
+
+        std::string lMoggFilename = lBasePath + CSettings::msPlatform + "/songs/" + lSongName + "/" + lSongName + ".moggsong";
+
+        CMoggsong lMoggFile;
+        leError = lMoggFile.LoadMoggSong( lMoggFilename.c_str() );
+        if( leError != eError_NoError )
+        {
+            SHOW_ERROR_AND_RETURN;
+        }
+
+        SSongConfig lNewSong;
+        lNewSong.mId = lSongName;
+        lNewSong.mName = lMoggFile.GetTitle();
+        lNewSong.mUnlockMethod = "play_num";
+        lNewSong.mType = "kSongExtra";
+        lNewSong.mPath = "../Songs/" + lSongName + "/" + lSongName + ".moggsong";
+        lNewSong.miUnlockCount = 0;
+        lNewSong.mArena = lMoggFile.GetArenaName();
+
+        laSongs.push_back( lNewSong );
+    }
+
+    leError = lSongsConfig.UpdateSongData( laSongs );
+    if( leError != eError_NoError )
+    {
+        SHOW_ERROR_AND_RETURN;
+    }
+
+    leError = lAmpConfig.SetSongs( laSongs );
+    if( leError != eError_NoError )
+    {
+        SHOW_ERROR_AND_RETURN;
+    }
+
+    std::cout << "Saving " << lAmpConfigPath.c_str() << "\n";
+
+    leError = lAmpConfig.Save( lAmpConfigPath.c_str() );
+    if( leError != eError_NoError )
+    {
+        SHOW_ERROR_AND_RETURN;
+    }
+
+    std::cout << "Saving " << lAmpSongsConfigPath.c_str() << "\n";
+
+    leError = lSongsConfig.Save( lAmpSongsConfigPath.c_str() );
+    if( leError != eError_NoError )
+    {
+        SHOW_ERROR_AND_RETURN;
+    }
+    
+    std::cout << "Added " << lSongDirectories.size() << " new songs\n\n";
+
+    return eError_NoError;
+}
+
 int main( int argc, char *argv[], char *envp[] )
 {
     struct sCommandPair
@@ -613,13 +815,14 @@ int main( int argc, char *argv[], char *envp[] )
         "-force",       EnableForceWrite,
         "-unpack",      Unpack,
         "-replace",     ReplaceSong,
-        "-buildsong",   BuildSingleSong,
+        "-buildsong",   BuildSingleSongCommand,
         "-buildsongs",  BuildSongs,
         "-pack",        Pack,
         "-pack_add",    AddPack,
         "-decode",      Decode,
         "-listsongs",   ListSongs,
         "-addsong",     AddSong,
+        "-autoadd",     AutoAddAllSongs,
         nullptr,        nullptr,
     };
 

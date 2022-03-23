@@ -521,7 +521,7 @@ eError CMoggsong::LoadMoggSong( const char* lpFilename )
     return eError_NoError;
 }
 
-eError CMoggsong::Save( const char* lpFilename ) const
+eError CMoggsong::Save( const char* lpFilename, bool lbDoOutput ) const
 {
     FILE* lpOutputFile = nullptr;
     fopen_s( &lpOutputFile, lpFilename, "rb" );
@@ -778,7 +778,10 @@ eError CMoggsong::Save( const char* lpFilename ) const
 
     lRoot.Save( lpDataPtr );
 
-    std::cout << "Writing " << lpFilename << "\n";
+    if( lbDoOutput )
+    {
+        std::cout << "Writing " << lpFilename << "\n";
+    }
 
     lpOutputFile = nullptr;
     fopen_s( &lpOutputFile, lpFilename, "wb" );

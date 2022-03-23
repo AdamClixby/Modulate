@@ -13,17 +13,17 @@
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <LocalDebuggerCommandArguments>-ps3 -addsong unpacked baldwinbros -listsongs unpacked</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-ps3 -listsongs unpacked -addsong unpacked weezer -autoadd unpacked</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerWorkingDirectory>C:\Dev\Amplitude\Game - PS3\NPUB31810\USRDIR</LocalDebuggerWorkingDirectory>
-    <RemoteDebuggerCommandArguments>-ps3 -addsong unpacked baldwinbros -listsongs unpacked</RemoteDebuggerCommandArguments>
+    <RemoteDebuggerCommandArguments>-ps3 -listsongs unpacked -addsong unpacked weezer -autoadd unpacked</RemoteDebuggerCommandArguments>
     <NXTargetName>Default</NXTargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <LocalDebuggerCommandArguments>-ps3 -addsong unpacked baldwinbros -listsongs unpacked</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-ps3 -listsongs unpacked -addsong unpacked weezer -autoadd unpacked</LocalDebuggerCommandArguments>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
     <LocalDebuggerWorkingDirectory>C:\Dev\Amplitude\Game - PS3\NPUB31810\USRDIR</LocalDebuggerWorkingDirectory>
-    <RemoteDebuggerCommandArguments>-ps3 -addsong unpacked baldwinbros -listsongs unpacked</RemoteDebuggerCommandArguments>
+    <RemoteDebuggerCommandArguments>-ps3 -listsongs unpacked -addsong unpacked weezer -autoadd unpacked</RemoteDebuggerCommandArguments>
     <NXTargetName>Default</NXTargetName>
   </PropertyGroup>
 </Project>

@@ -7,6 +7,10 @@
       "Command": "-ps3"
     },
     {
+      "Id": "6f757290-2840-42c7-bc6a-e7ac02f5b7cf",
+      "Command": "-listsongs unpacked"
+    },
+    {
       "Id": "002723c2-5cdc-47a5-9ff2-812d91c04551",
       "Command": "-unpack unpacked"
     },
@@ -83,8 +87,8 @@
       "Command": "-pack_add unpacked repacked"
     },
     {
-      "Id": "6f757290-2840-42c7-bc6a-e7ac02f5b7cf",
-      "Command": "-listsongs unpacked"
+      "Id": "a56ebebf-9ff7-4f72-a64a-e321c72c0b7a",
+      "Command": "-autoadd unpacked"
     }
   ]
 }

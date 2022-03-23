@@ -206,7 +206,7 @@ class CMoggsong
 {
 public:
     eError LoadMoggSong( const char* lpFilename );
-    eError Save( const char* lpFilename ) const;
+    eError Save( const char* lpFilename, bool lbDoOutput = true ) const;
 
     void SetMoggPath( const std::string& lFilename ) { mMoggPath = lFilename; }
     void SetMidiPath( const std::string& lFilename ) { mMidiPath = lFilename; }
