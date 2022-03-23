@@ -32,6 +32,14 @@ void ToUpper( std::string& lString )
     } );
 }
 
+void ToLower( std::string& lString )
+{
+    std::for_each( lString.begin(), lString.end(), []( char& c )
+    {
+        c = ::tolower( c );
+    } );
+}
+
 eError EnableVerbose( std::deque< std::string >& )
 {
     CSettings::mbVerbose = true;
@@ -123,12 +131,14 @@ eError BuildSingleSong( std::deque< std::string >& laParams, bool lbDoOutput = t
 
         if( lpDataPtr == lpMidiData + liMidiFileSize )
         {
+            std::cout << "Failed to update midi tempo from moggsong\n";
             return eError_InvalidData;
         }
     }
 
     if( *(int64_t*)lpDataPtr != lTerminator )
     {
+        std::cout << "Failed to update midi tempo from moggsong\n";
         return eError_InvalidData;
     }
 
@@ -498,6 +508,7 @@ void PrintUsage()
     std::cout << "-decode <data_dir>\t\t\t\tDecode the .hdr file\n";
     std::cout << "-listsongs <data_dir>\t\t\t\tList all songs from the game\n";
     std::cout << "-addsong <data_dir> <song_name>\t\t\tAdd <song_name> to the list of songs\n";
+    std::cout << "-autoadd <data_dir>            \t\t\tAdd all new songs in the songs folder to the list of songs\n";
 }
 
 eError PS3( std::deque< std::string >& laParams )
@@ -698,8 +709,8 @@ eError AutoAddAllSongs( std::deque< std::string >& laParams )
         std::string lDirectoryName = lFindData.cFileName;
         ToUpper( lDirectoryName );
 
-        if( lDirectoryName == "."    || lDirectoryName == ".."   || lDirectoryName == "TUT0" ||
-            lDirectoryName == "TUT1" || lDirectoryName == "TUT2" || lDirectoryName == "TUTC" )
+        if( lDirectoryName == "."    || lDirectoryName == ".."   || lDirectoryName == "CREDITS" ||
+            lDirectoryName == "TUT0" || lDirectoryName == "TUT1" || lDirectoryName == "TUT2" || lDirectoryName == "TUTC" )
         {
             continue;
         }
@@ -728,6 +739,7 @@ eError AutoAddAllSongs( std::deque< std::string >& laParams )
             continue;
         }
 
+        ToLower( lDirectoryName );
         lSongDirectories.push_back( lDirectoryName );
     } while( FindNextFileA( lFindHandle, &lFindData ) != 0 );
 
@@ -765,6 +777,7 @@ eError AutoAddAllSongs( std::deque< std::string >& laParams )
         lNewSong.mPath = "../Songs/" + lSongName + "/" + lSongName + ".moggsong";
         lNewSong.miUnlockCount = 0;
         lNewSong.mArena = lMoggFile.GetArenaName();
+        ToUpper( lNewSong.mId );
 
         laSongs.push_back( lNewSong );
     }

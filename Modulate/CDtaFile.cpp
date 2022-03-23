@@ -4,6 +4,9 @@
 #include <functional>
 #include <algorithm>
 
+#include <unordered_map>
+#include <string>
+
 #include "Utils.h"
 
 #define VALIDATE_STRING( lpString ) if( !lpString ) { delete[] lpInputData; return eError_InvalidData; }
@@ -301,7 +304,14 @@ eError CDtaFile::UpdateSongData( const std::vector< SSongConfig >& laSongs )
         CDtaNodeBase* lpWorldNode = mRootNode.FindNode( lSong.mArena );
         if( !lpWorldNode )
         {
-            lpWorldNode = mRootNode.FindNode( "World1" );
+            std::hash< std::string > lHasher;
+            size_t liHash = lHasher( lSong.mId );
+
+            char lpWorldIndex[ 2 ] = { '1' + char( liHash % 3 ), 0 };
+            std::string lWorldName( "World" );
+            lWorldName.append( lpWorldIndex );
+
+            lpWorldNode = mRootNode.FindNode( lWorldName );
         }
         if( !lpWorldNode )
         {

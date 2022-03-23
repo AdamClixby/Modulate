@@ -76,19 +76,19 @@
     },
     {
       "Id": "e3643893-ab72-45cc-ac11-b8e67cb77f04",
-      "Command": "-addsong unpacked weezer"
+      "Command": "-addsong unpacked beguiled"
     },
     {
       "Id": "eec23900-8bfd-43ae-a108-296d12238a97",
       "Command": "-pack unpacked repacked"
     },
     {
-      "Id": "dad65b47-5bb3-446a-942b-81c24aa7aa68",
-      "Command": "-pack_add unpacked repacked"
-    },
-    {
       "Id": "a56ebebf-9ff7-4f72-a64a-e321c72c0b7a",
       "Command": "-autoadd unpacked"
+    },
+    {
+      "Id": "dad65b47-5bb3-446a-942b-81c24aa7aa68",
+      "Command": "-pack_add unpacked repacked"
     }
   ]
 }
