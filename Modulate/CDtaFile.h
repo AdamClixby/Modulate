@@ -132,7 +132,7 @@ public:
         mbIsBaseNode = false;
     }
 
-    virtual void SaveToStream( unsigned char*& lpStream ) const override { }
+    void SaveToStream( unsigned char*& lpStream ) const override { }
 
     const T& GetValue() const
     {
