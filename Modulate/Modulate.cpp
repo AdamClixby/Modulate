@@ -698,7 +698,7 @@ eError AutoAddAllSongs( std::deque< std::string >& laParams )
         laExistingSongNames.push_back( lSongName );
     }
 
-    std::vector< std::string > lSongDirectories;
+    int liSongsAdded = 0;
     do
     {
         if( ( lFindData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) == 0 )
@@ -730,6 +730,10 @@ eError AutoAddAllSongs( std::deque< std::string >& laParams )
             continue;
         }
 
+        std::string lSongName = lDirectoryName;
+        ToLower( lSongName );
+        std::cout << "Loading " << lSongName << "... ";
+
         std::string lFilename = lBasePath + CSettings::msPlatform + "/songs/" + lDirectoryName + "/" + lDirectoryName + ".moggsong";
 
         CMoggsong lDataFile;
@@ -739,26 +743,17 @@ eError AutoAddAllSongs( std::deque< std::string >& laParams )
             continue;
         }
 
-        ToLower( lDirectoryName );
-        lSongDirectories.push_back( lDirectoryName );
-    } while( FindNextFileA( lFindHandle, &lFindData ) != 0 );
-
-    FindClose( lFindHandle );
-
-    if( lSongDirectories.empty() )
-    {
-        std::cout << "Found no new songs\n";
-        return eError_NoError;
-    }
-
-    for( const std::string& lSongName : lSongDirectories )
-    {
         std::deque< std::string > lSingleSongParams;
         lSingleSongParams.push_back( lBasePath );
         lSingleSongParams.push_back( lSongName );
 
-        std::cout << "Building song " << lSongName << "\n";
-        BuildSingleSong( lSingleSongParams, false );
+        std::cout << "building... ";
+        leError = BuildSingleSong( lSingleSongParams, false );
+        if( leError != eError_NoError )
+        {
+            continue;
+        }
+        std::cout << "done!\n";
 
         std::string lMoggFilename = lBasePath + CSettings::msPlatform + "/songs/" + lSongName + "/" + lSongName + ".moggsong";
 
@@ -780,6 +775,15 @@ eError AutoAddAllSongs( std::deque< std::string >& laParams )
         ToUpper( lNewSong.mId );
 
         laSongs.push_back( lNewSong );
+        ++liSongsAdded;
+    } while( FindNextFileA( lFindHandle, &lFindData ) != 0 );
+
+    FindClose( lFindHandle );
+
+    if( liSongsAdded == 0 )
+    {
+        std::cout << "Found no new songs\n";
+        return eError_NoError;
     }
 
     leError = lSongsConfig.UpdateSongData( laSongs );
@@ -810,7 +814,7 @@ eError AutoAddAllSongs( std::deque< std::string >& laParams )
         SHOW_ERROR_AND_RETURN;
     }
     
-    std::cout << "Added " << lSongDirectories.size() << " new songs\n\n";
+    std::cout << "Added " << liSongsAdded << " new songs\n";
 
     return eError_NoError;
 }
