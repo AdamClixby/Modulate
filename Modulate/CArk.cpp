@@ -746,9 +746,6 @@ eError CArk::BuildArk( const char* lpInputDirectory )
             SHOW_ERROR_AND_RETURN;
         }
 
-        //fread( mpArkData + lpFileDef->mi64Offset, lpFileDef->miSize, 1, lpInputFile );
-        //fclose( lpInputFile );
-
         {
             lpFileDef->mi64Offset = ( lpArkPtr - mpArkData );
             fread( lpArkPtr, lpFileDef->miSize, 1, lpInputFile );
@@ -768,43 +765,6 @@ eError CArk::BuildArk( const char* lpInputDirectory )
         }
     }
     mpArks[ liArkIndex ].muSize = (unsigned int)( lpArkPtr - lpArkStartPtr );
-
-    unsigned int luExistingSize = 0;
-    unsigned int luExistingOffset = 0;
-    for( int ii = 0; ii < miNumArks; ++ii )
-    {
-        unsigned int luOffset = mpArks[ ii ].muSize + luExistingOffset;
-
-        int liBoundaryFileIndex = -1;
-        for( int ff = 0; ff < miNumFiles; ++ff )
-        {
-            if( mpFiles[ ff ].mi64Offset < luOffset &&
-                mpFiles[ ff ].mi64Offset + mpFiles[ ff ].miSize > luOffset )
-            {
-                liBoundaryFileIndex = ff;
-                break;
-            }
-        }
-
-        if( liBoundaryFileIndex != -1 )
-        {
-            unsigned int luEndOffset = (unsigned int)mpFiles[ liBoundaryFileIndex ].mi64Offset + mpFiles[ liBoundaryFileIndex ].miSize;
-            unsigned int luNewSize = luEndOffset - luExistingSize;
-
-            if( ii < miNumArks - 1 )
-            {
-                // Steal the extra space from the next ark
-                mpArks[ ii + 1 ].muSize -= ( luNewSize - mpArks[ ii ].muSize );
-            }
-
-            mpArks[ ii ].muSize = luNewSize;
-            luExistingSize = luEndOffset;
-        }
-
-        luExistingOffset += mpArks[ ii ].muSize;
-    }
-
-    //mpArks[ 0 ].muSize = luTotalArkSize;
 
     VERBOSE_OUT( "Ark built\n" );
     return eError_NoError;
