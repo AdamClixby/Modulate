@@ -443,8 +443,12 @@ eError CArk::ExtractFiles( int liFirstFileIndex, int liNumFiles, const char* lpT
         }
         else
         {
-            fwrite( &mpArkData[ lpFileDef->mi64Offset ], lpFileDef->miSize, 1, lpOutputFile );
+            size_t liAmountWritten = fwrite( &mpArkData[ lpFileDef->mi64Offset ], 1, lpFileDef->miSize, lpOutputFile );
             fclose( lpOutputFile );
+            if( liAmountWritten != lpFileDef->miSize )
+            {
+                return eError_FailedToWriteData;
+            }
         }
     }
 
@@ -823,8 +827,13 @@ eError CArk::SaveArk( const char* lpOutputDirectory, const char* lpHeaderFilenam
             fopen_s( &lpOutputFile, lFilename.c_str(), "wb" );
             if( lpOutputFile )
             {
-                fwrite( lpArkPtr, lpArkDef->muSize, 1, lpOutputFile );
+                size_t liAmountWritten = fwrite( lpArkPtr, 1, lpArkDef->muSize, lpOutputFile );
                 fclose( lpOutputFile );
+
+                if( liAmountWritten != lpArkDef->muSize )
+                {
+                    return eError_FailedToWriteData;
+                }
 
                 lpArkPtr += lpArkDef->muSize;
             }
@@ -833,6 +842,7 @@ eError CArk::SaveArk( const char* lpOutputDirectory, const char* lpHeaderFilenam
                 std::cout << "Failed to open file for writing: " << lFilename.c_str() << "\n";
             }
         }
+        return eError_NoError;
     };
 
     auto lSaveHeader = [ & ]()
@@ -842,7 +852,7 @@ eError CArk::SaveArk( const char* lpOutputDirectory, const char* lpHeaderFilenam
         fopen_s( &lpHeaderFile, lpHeaderFilename, "rb" );
         if( !lpHeaderFile )
         {
-            return;
+            return eError_FailedToOpenFile;
         }
 
         const int kiMaxHeaderSize = 512 * 1024;
@@ -1103,17 +1113,26 @@ eError CArk::SaveArk( const char* lpOutputDirectory, const char* lpHeaderFilenam
         fopen_s( &lpOutputFile, lHeaderFilename.c_str(), "wb" );
         if( lpOutputFile )
         {
-            fwrite( lacHeaderData, liHeaderDataSize, 1, lpOutputFile );
+            size_t liAmountWritten = fwrite( lacHeaderData, 1, liHeaderDataSize, lpOutputFile );
             fclose( lpOutputFile );
+            if( liAmountWritten != liHeaderDataSize )
+            {
+                return eError_FailedToWriteData;
+            }
         }
         else
         {
             VERBOSE_OUT( "Failed to open file for writing: " << lHeaderFilename.c_str() << "\n" );
         }
+
+        return eError_NoError;
     };
 
-    lSaveHeader();
-    lSaveArk();
+    eError leError = lSaveHeader();
+    SHOW_ERROR_AND_RETURN;
+
+    leError = lSaveArk();
+    SHOW_ERROR_AND_RETURN;
 
     return eError_NoError;
 }

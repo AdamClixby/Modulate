@@ -15,6 +15,7 @@ enum eError {
     eError_FailedToDeleteFile,
     eError_FailedToCopyFile,
     eError_InvalidParameter,
+    eError_FailedToWriteData,
     eError_NumTypes
 };
 
@@ -33,6 +34,7 @@ static void ShowError( eError leError )
         "Failed to delete file",
         "Failed to copy file",
         "Invalid parameter",
+        "Failed to write data",
     };
 
     std::cout << "ERROR: " << lapErrorNames[ leError ] << "\n";

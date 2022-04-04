@@ -169,7 +169,7 @@ eError BuildSingleSong( std::deque< std::string >& laParams, bool lbDoOutput = t
         return eError_FailedToCreateFile;
     }
 
-    fwrite( lpMidiData, liMidiFileSize, 1, lpMidiFile );
+    fwrite( lpMidiData, 1, liMidiFileSize, lpMidiFile );
     fclose( lpMidiFile );
 
     delete[] lpMidiData;
@@ -433,12 +433,13 @@ eError Decode( std::deque< std::string >& laParams )
         delete[] lpHeaderData;
         return eError_FailedToCreateFile;
     }
-    fwrite( lpHeaderData, 1, liHeaderSize, lpHeaderFile );
+
+    int liWritten = fwrite( lpHeaderData, 1, liHeaderSize, lpHeaderFile );
     fclose( lpHeaderFile );
 
     delete[] lpHeaderData;
 
-    return eError_NoError;
+    return liWritten == liHeaderSize ? eError_NoError : eError_FailedToWriteData;
 }
 
 eError ListSongs( std::deque< std::string >& laParams )

@@ -364,11 +364,12 @@ eError CDtaFile::Save( const char* lpFilename ) const
         SHOW_ERROR_AND_RETURN_W( delete[] lpOutputData );
     }
 
-    fwrite( lpOutputData, 1, lpOutputPtr - lpOutputData, lpOutputFile );
+    size_t liAmountToWrite = lpOutputPtr - lpOutputData;
+    size_t liAmountWritten = fwrite( lpOutputData, 1, liAmountToWrite, lpOutputFile );
     fclose( lpOutputFile );
 
     delete[] lpOutputData;
-    return eError_NoError;
+    return liAmountWritten == liAmountToWrite ? eError_NoError : eError_FailedToWriteData;
 }
 
 eError CDtaFile::AddTreeNode( CDtaNodeBase* lpParent, const char*& lpData, eNodeType leNodeType )
@@ -799,10 +800,12 @@ eError CMoggsong::Save( const char* lpFilename, bool lbDoOutput ) const
     {
         return eError_FailedToCreateFile;
     }
-    fwrite( lacData, lpDataPtr - lacData, 1, lpOutputFile );
+
+    size_t liAmountToWrite = lpDataPtr - lacData;
+    size_t liAmountWritten = fwrite( lacData, 1, liAmountToWrite, lpOutputFile );
     fclose( lpOutputFile );
 
-    return eError_NoError;
+    return ( liAmountWritten == liAmountToWrite ) ? eError_NoError : eError_FailedToWriteData;
 }
 
 eError CMoggsong::ProcessMoggSongKey( char*& lpData, __int64 liDataSize )
@@ -939,7 +942,7 @@ eError CMoggsong::ProcessMoggSongKey( char*& lpData, __int64 liDataSize )
         return eError_NoError;
     };
 
-    if( IS_KEY( "countin" ) )
+    if( miCountIn == 4 && IS_KEY( "countin" ) )
     {
         return lReadInt( miCountIn );
     }
@@ -1193,7 +1196,7 @@ eError CMoggsong::ProcessMoggSongKey( char*& lpData, __int64 liDataSize )
         return eError_NoError;
     }
 
-    if( IS_KEY( "tunnel_scale" ) )
+    if( mfTunnelScale == 1.0f && IS_KEY( "tunnel_scale" ) )
     {
         std::string lScaleString;
         eError leError = lReadString( lScaleString );
