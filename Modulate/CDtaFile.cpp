@@ -939,7 +939,7 @@ eError CMoggsong::ProcessMoggSongKey( char*& lpData, __int64 liDataSize )
         return eError_NoError;
     };
 
-    if( miCountIn == 0 && IS_KEY( "countin" ) )
+    if( IS_KEY( "countin" ) )
     {
         return lReadInt( miCountIn );
     }
@@ -1193,7 +1193,7 @@ eError CMoggsong::ProcessMoggSongKey( char*& lpData, __int64 liDataSize )
         return eError_NoError;
     }
 
-    if( mfTunnelScale == 0.0f && IS_KEY( "tunnel_scale" ) )
+    if( IS_KEY( "tunnel_scale" ) )
     {
         std::string lScaleString;
         eError leError = lReadString( lScaleString );

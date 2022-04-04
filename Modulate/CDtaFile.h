@@ -156,31 +156,6 @@ CDtaNodeBase* CDtaNodeBase::AddChild( const T& lValue )
     return lNewNode;
 }
 
-void CDtaNode< int >::SaveToStream( unsigned char*& lpStream ) const
-{
-    WriteToStream< int >( lpStream, miTypeOverride == -1 ? ENodeType_Integer0 : miTypeOverride );
-    WriteToStream< int >( lpStream, mValue );
-}
-
-void CDtaNode< unsigned int >::SaveToStream( unsigned char*& lpStream ) const
-{
-    WriteToStream< int >( lpStream, miTypeOverride == -1 ? ENodeType_Integer0 : miTypeOverride );
-    WriteToStream< int >( lpStream, (int)mValue );
-}
-
-void CDtaNode< float >::SaveToStream( unsigned char*& lpStream ) const
-{
-    WriteToStream< int >( lpStream, miTypeOverride == -1 ? ENodeType_Float : miTypeOverride );
-    WriteToStream< float >( lpStream, mValue );
-}
-
-void CDtaNode< std::string >::SaveToStream( unsigned char*& lpStream ) const
-{
-    WriteToStream< int >( lpStream, miTypeOverride == -1 ? ENodeType_String : miTypeOverride );
-    WriteToStream( lpStream, mValue );
-}
-
-
 class CDtaFile
 {
 public:
@@ -230,11 +205,11 @@ private:
     std::string mDescription = "";
     std::string mUnlockRequirement = "";
 
-    float mfTunnelScale = 0.0f;
+    float mfTunnelScale = 1.0f;
 
-    float mfBPM = 0.0f;
+    float mfBPM = 120.0f;
     int miLength = 0;
-    int miCountIn = 0;
+    int miCountIn = 4;
     int miBossLevel = -1;
 
     int miPreviewStartMS = 0;
