@@ -434,12 +434,12 @@ eError Decode( std::deque< std::string >& laParams )
         return eError_FailedToCreateFile;
     }
 
-    int liWritten = fwrite( lpHeaderData, 1, liHeaderSize, lpHeaderFile );
+    size_t liWritten = fwrite( lpHeaderData, 1, liHeaderSize, lpHeaderFile );
     fclose( lpHeaderFile );
 
     delete[] lpHeaderData;
 
-    return liWritten == liHeaderSize ? eError_NoError : eError_FailedToWriteData;
+    return liWritten == (size_t)liHeaderSize ? eError_NoError : eError_FailedToWriteData;
 }
 
 eError ListSongs( std::deque< std::string >& laParams )
