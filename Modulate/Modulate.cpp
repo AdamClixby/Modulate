@@ -15,6 +15,7 @@
 #include <deque>
 #include <algorithm>
 #include <string>
+#include <cctype>
 
 #include "Error.h"
 #include "Settings.h"
@@ -399,7 +400,7 @@ eError Pack( std::deque< std::string >& laParams )
     leError = lArkHeader.ConstructFromDirectory( lInputPath.c_str(), lReferenceArkHeader, lSongs );
     SHOW_ERROR_AND_RETURN;
 
-    lArkHeader.BuildArk( lInputPath.c_str() );
+    lArkHeader.BuildArk( lInputPath.c_str(), lSongs );
     lArkHeader.SaveArk( lOuptutPath.c_str(), lHeaderFilename.c_str() );
     //lReferenceArkHeader.SaveArk( lOuptutPath.c_str(), lHeaderFilename.c_str() );
 
@@ -477,20 +478,14 @@ eError ListSongs( std::deque< std::string >& laParams )
 
     CDtaFile lAmpConfig;
     eError leError = lAmpConfig.Load( lAmpConfigPath.c_str() );
-    if( leError != eError_NoError )
-    {
-        SHOW_ERROR_AND_RETURN;
-    }
+    SHOW_ERROR_AND_RETURN;
 
     std::string lAmpSongsConfigPath = lBasePath + CSettings::msPlatform + "/config/amp_songs_config.dta_dta_" + CSettings::msPlatform;
     std::cout << "Loading " << lAmpSongsConfigPath.c_str() << "\n";
 
     CDtaFile lSongsConfig;
     leError = lSongsConfig.Load( lAmpSongsConfigPath.c_str() );
-    if( leError != eError_NoError )
-    {
-        SHOW_ERROR_AND_RETURN;
-    }
+    SHOW_ERROR_AND_RETURN;
 
     std::cout << "\n";
 
@@ -525,6 +520,7 @@ void PrintUsage()
     std::cout << "-decode <data_dir>\t\t\t\tDecode the .hdr file\n";
     std::cout << "-listsongs <data_dir>\t\t\t\tList all songs from the game\n";
     std::cout << "-addsong <data_dir> <song_name>\t\t\tAdd <song_name> to the list of songs\n";
+    std::cout << "-removesong <data_dir> <song_name>\t\tRemove <song_name> from the list of songs\n";
     std::cout << "-autoadd <data_dir>            \t\t\tAdd all new songs in the songs folder to the list of songs\n";
 }
 
@@ -572,20 +568,14 @@ eError AddSong( std::deque< std::string >& laParams )
 
     CDtaFile lAmpConfig;
     eError leError = lAmpConfig.Load( lAmpConfigPath.c_str() );
-    if( leError != eError_NoError )
-    {
-        SHOW_ERROR_AND_RETURN;
-    }
+    SHOW_ERROR_AND_RETURN;
 
     std::string lAmpSongsConfigPath = lBasePath + CSettings::msPlatform + "/config/amp_songs_config.dta_dta_" + CSettings::msPlatform;
     std::cout << "Loading " << lAmpSongsConfigPath.c_str() << "\n";
 
     CDtaFile lSongsConfig;
     leError = lSongsConfig.Load( lAmpSongsConfigPath.c_str() );
-    if( leError != eError_NoError )
-    {
-        SHOW_ERROR_AND_RETURN;
-    }
+    SHOW_ERROR_AND_RETURN;
 
     std::vector< SSongConfig > laSongs = lAmpConfig.GetSongs();
     lSongsConfig.GetSongData( laSongs );
@@ -598,10 +588,7 @@ eError AddSong( std::deque< std::string >& laParams )
 
     CMoggsong lMoggFile;
     leError = lMoggFile.LoadMoggSong( lMoggFilename.c_str() );
-    if( leError != eError_NoError )
-    {
-        SHOW_ERROR_AND_RETURN;
-    }
+    SHOW_ERROR_AND_RETURN;
 
     std::string lSongIdUpper = lSongId;
     ToUpper( lSongIdUpper );
@@ -620,32 +607,20 @@ eError AddSong( std::deque< std::string >& laParams )
     std::cout << "Updating song data\n";
 
     leError = lSongsConfig.UpdateSongData( laSongs );
-    if( leError != eError_NoError )
-    {
-        SHOW_ERROR_AND_RETURN;
-    }
+    SHOW_ERROR_AND_RETURN;
 
     leError = lAmpConfig.SetSongs( laSongs );
-    if( leError != eError_NoError )
-    {
-        SHOW_ERROR_AND_RETURN;
-    }
+    SHOW_ERROR_AND_RETURN;
 
     std::cout << "Saving " << lAmpConfigPath.c_str() << "\n";
 
     leError = lAmpConfig.Save( lAmpConfigPath.c_str() );
-    if( leError != eError_NoError )
-    {
-        SHOW_ERROR_AND_RETURN;
-    }
+    SHOW_ERROR_AND_RETURN;
 
     std::cout << "Saving " << lAmpSongsConfigPath.c_str() << "\n";
 
     leError = lSongsConfig.Save( lAmpSongsConfigPath.c_str() );
-    if( leError != eError_NoError )
-    {
-        SHOW_ERROR_AND_RETURN;
-    }
+    SHOW_ERROR_AND_RETURN;
 
     return eError_NoError;
 }
@@ -669,20 +644,14 @@ eError AutoAddAllSongs( std::deque< std::string >& laParams )
 
     CDtaFile lAmpConfig;
     eError leError = lAmpConfig.Load( lAmpConfigPath.c_str() );
-    if( leError != eError_NoError )
-    {
-        SHOW_ERROR_AND_RETURN;
-    }
+    SHOW_ERROR_AND_RETURN;
 
     std::string lAmpSongsConfigPath = lBasePath + CSettings::msPlatform + "/config/amp_songs_config.dta_dta_" + CSettings::msPlatform;
     std::cout << "Loading " << lAmpSongsConfigPath.c_str() << "\n";
 
     CDtaFile lSongsConfig;
     leError = lSongsConfig.Load( lAmpSongsConfigPath.c_str() );
-    if( leError != eError_NoError )
-    {
-        SHOW_ERROR_AND_RETURN;
-    }
+    SHOW_ERROR_AND_RETURN;
 
     std::cout << "\nAdding all songs from " << lBasePath.c_str() << CSettings::msPlatform << "/songs/\n";
 
@@ -776,10 +745,7 @@ eError AutoAddAllSongs( std::deque< std::string >& laParams )
 
         CMoggsong lMoggFile;
         leError = lMoggFile.LoadMoggSong( lMoggFilename.c_str() );
-        if( leError != eError_NoError )
-        {
-            SHOW_ERROR_AND_RETURN;
-        }
+        SHOW_ERROR_AND_RETURN;
 
         SSongConfig lNewSong;
         lNewSong.mId = lSongName;
@@ -804,34 +770,81 @@ eError AutoAddAllSongs( std::deque< std::string >& laParams )
     }
 
     leError = lSongsConfig.UpdateSongData( laSongs );
-    if( leError != eError_NoError )
-    {
-        SHOW_ERROR_AND_RETURN;
-    }
+    SHOW_ERROR_AND_RETURN;
 
     leError = lAmpConfig.SetSongs( laSongs );
-    if( leError != eError_NoError )
+    SHOW_ERROR_AND_RETURN;
+
+    std::cout << "Saving " << lAmpConfigPath.c_str() << "\n";
+
+    leError = lAmpConfig.Save( lAmpConfigPath.c_str() );
+    SHOW_ERROR_AND_RETURN;
+
+    std::cout << "Saving " << lAmpSongsConfigPath.c_str() << "\n";
+
+    leError = lSongsConfig.Save( lAmpSongsConfigPath.c_str() );
+    SHOW_ERROR_AND_RETURN;
+
+    std::cout << "Added " << liSongsAdded << " new songs\n";
+
+    return eError_NoError;
+}
+
+eError RemoveSong( std::deque< std::string >& laParams )
+{
+    if( laParams.empty() )
     {
+        return eError_InvalidParameter;
+    }
+    std::string lBasePath = laParams.front();
+    laParams.pop_front();
+    if( lBasePath.back() != '/' && lBasePath.back() != '\\' )
+    {
+        lBasePath += "/";
+    }
+
+    std::string lAmpConfigPath = lBasePath + CSettings::msPlatform + "/config/amp_config.dta_dta_" + CSettings::msPlatform;
+    std::cout << "Loading " << lAmpConfigPath.c_str() << "\n";
+
+    CDtaFile lAmpConfig;
+    eError leError = lAmpConfig.Load( lAmpConfigPath.c_str() );
+    SHOW_ERROR_AND_RETURN;
+
+    std::string lAmpSongsConfigPath = lBasePath + CSettings::msPlatform + "/config/amp_songs_config.dta_dta_" + CSettings::msPlatform;
+    std::cout << "Loading " << lAmpSongsConfigPath.c_str() << "\n";
+
+    CDtaFile lSongsConfig;
+    leError = lSongsConfig.Load( lAmpSongsConfigPath.c_str() );
+    SHOW_ERROR_AND_RETURN;
+
+    std::string lSongId = laParams.front();
+    laParams.pop_front();
+
+    std::transform( lSongId.begin(), lSongId.end(), lSongId.begin(), []( unsigned char c ) {
+        return std::toupper( c );
+    } );
+
+    std::cout << "Removing song " << lSongId << "\n";
+
+    bool lbRemovedFromSongList = lSongsConfig.RemoveSong( lSongId );
+    bool lbRemovedFromConfig = lAmpConfig.RemoveSong( lSongId );
+
+    if( !lbRemovedFromConfig || !lbRemovedFromSongList )
+    {
+        std::cout << "Failed to find song " << lSongId << " in song list\n";
+        leError = eError_InvalidParameter;
         SHOW_ERROR_AND_RETURN;
     }
 
     std::cout << "Saving " << lAmpConfigPath.c_str() << "\n";
 
     leError = lAmpConfig.Save( lAmpConfigPath.c_str() );
-    if( leError != eError_NoError )
-    {
-        SHOW_ERROR_AND_RETURN;
-    }
+    SHOW_ERROR_AND_RETURN;
 
     std::cout << "Saving " << lAmpSongsConfigPath.c_str() << "\n";
 
     leError = lSongsConfig.Save( lAmpSongsConfigPath.c_str() );
-    if( leError != eError_NoError )
-    {
-        SHOW_ERROR_AND_RETURN;
-    }
-    
-    std::cout << "Added " << liSongsAdded << " new songs\n";
+    SHOW_ERROR_AND_RETURN;
 
     return eError_NoError;
 }
@@ -857,6 +870,7 @@ int main( int argc, char *argv[], char *envp[] )
         "-listsongs",   ListSongs,
         "-addsong",     AddSong,
         "-autoadd",     AutoAddAllSongs,
+        "-removesong",  RemoveSong,
         nullptr,        nullptr,
     };
 

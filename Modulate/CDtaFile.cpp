@@ -291,6 +291,20 @@ void CDtaFile::GetSongData( std::vector< SSongConfig >& laSongs ) const
     }
 }
 
+bool CDtaFile::RemoveSong( const std::string& lSongId )
+{
+    CDtaNodeBase* lpSongIdNode = mRootNode.FindNode( lSongId );
+    if( !lpSongIdNode )
+    {
+        return false;
+    }
+
+    lpSongIdNode->GetParent()->GetParent()->RemoveChild( lpSongIdNode->GetParent() );
+    delete lpSongIdNode->GetParent();
+
+    return true;
+}
+
 eError CDtaFile::UpdateSongData( const std::vector< SSongConfig >& laSongs )
 {
     static std::string lTypeName( "type" );

@@ -7,12 +7,12 @@
       "Command": "-ps3"
     },
     {
-      "Id": "6f757290-2840-42c7-bc6a-e7ac02f5b7cf",
-      "Command": "-listsongs unpacked"
-    },
-    {
       "Id": "002723c2-5cdc-47a5-9ff2-812d91c04551",
       "Command": "-unpack unpacked"
+    },
+    {
+      "Id": "6f757290-2840-42c7-bc6a-e7ac02f5b7cf",
+      "Command": "-listsongs unpacked"
     },
     {
       "Id": "dd859710-3395-468c-a666-9eba4389fe5a",
@@ -51,6 +51,18 @@
       "Command": "-addsong unpacked pink"
     },
     {
+      "Id": "0c7cee06-a2f7-4520-8a81-782338caf34a",
+      "Command": "-listsongs unpacked"
+    },
+    {
+      "Id": "dad65b47-5bb3-446a-942b-81c24aa7aa68",
+      "Command": "-pack_add unpacked repacked"
+    },
+    {
+      "Id": "76086ea9-b509-42c7-8162-651c7d7a9612",
+      "Command": "-removesong unpacked crazy_ride"
+    },
+    {
       "Id": "01a6beea-1b45-453b-b974-67be0b3e20cc",
       "Command": "-addsong unpacked pod"
     },
@@ -87,11 +99,11 @@
       "Command": "-autoadd unpacked"
     },
     {
-      "Id": "dad65b47-5bb3-446a-942b-81c24aa7aa68",
+      "Id": "dd60407a-4fd9-4ec4-b0f5-e0b1362dc60b",
       "Command": "-pack_add unpacked repacked"
     },
     {
-      "Id": "0c7cee06-a2f7-4520-8a81-782338caf34a",
+      "Id": "e532d544-2f0d-4f1d-9768-714d97ebc124",
       "Command": "-listsongs unpacked"
     }
   ]

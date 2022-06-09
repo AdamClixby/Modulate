@@ -14,7 +14,7 @@ public:
     ~CArk();
 
     eError ConstructFromDirectory( const char* lpInputDirectory, const CArk& lReferenceHeader, std::vector< SSongConfig > laSongs );
-    eError BuildArk( const char* lpInputDirectory );
+    eError BuildArk( const char* lpInputDirectory, std::vector< SSongConfig > laSongs );
     eError SaveArk( const char* lpOutputDirectory, const char* lpHeaderFilename ) const;
 
     eError Load( const char* lpHeaderFilename );
@@ -73,6 +73,8 @@ public:
     eError LoadArkData();
 
 private:
+    bool ShouldPackFile( const std::vector< SSongConfig >& laSongs, const char* lpFilename );
+
     void SortFiles();
 
     const sFileDefinition* GetFile( size_t lFilenameHash, int liDuplicateIndex ) const;

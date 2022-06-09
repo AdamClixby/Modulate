@@ -82,6 +82,16 @@ public:
         return lpValue;
     }
 
+    void RemoveChild( CDtaNodeBase* lpValue )
+    {
+        std::deque< CDtaNodeBase* >::iterator lEntry = std::find( maChildren.begin(), maChildren.end(), lpValue );
+        if( lEntry == maChildren.end() )
+        {
+            return;
+        }
+        maChildren.erase( lEntry );
+    }
+
     const std::deque< CDtaNodeBase* >&
     GetChildren() const
     {
@@ -168,6 +178,7 @@ public:
     eError SetSongs( const std::vector< SSongConfig >& laSongs );
 
     void GetSongData( std::vector< SSongConfig >& laSongs ) const;
+    bool RemoveSong( const std::string& lSongId );
     eError UpdateSongData( const std::vector< SSongConfig >& laSongs );
 
 private:
