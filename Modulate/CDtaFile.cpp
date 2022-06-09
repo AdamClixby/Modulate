@@ -3,6 +3,7 @@
 
 #include <functional>
 #include <algorithm>
+#include <cctype>
 
 #include <unordered_map>
 #include <string>
@@ -275,6 +276,9 @@ void CDtaFile::GetSongData( std::vector< SSongConfig >& laSongs ) const
 
         CDtaNode<std::string>* lpPathNode = dynamic_cast<CDtaNode<std::string>*>( lpSongNode->GetChildren()[ ESongData_Path ] );
         lSong.mPath = lpPathNode->GetValue();
+        std::transform( lSong.mPath.begin(), lSong.mPath.end(), lSong.mPath.begin(), []( unsigned char c ) {
+            return std::tolower( c );
+        } );
 
         CDtaNodeBase* lpTypeTreeNode = lpSongNode->GetChildren()[ ESongData_TypeNode ];
         if( lpTypeTreeNode->GetChildren().size() < 2 )

@@ -89,6 +89,10 @@
     {
       "Id": "dad65b47-5bb3-446a-942b-81c24aa7aa68",
       "Command": "-pack_add unpacked repacked"
+    },
+    {
+      "Id": "0c7cee06-a2f7-4520-8a81-782338caf34a",
+      "Command": "-listsongs unpacked"
     }
   ]
 }

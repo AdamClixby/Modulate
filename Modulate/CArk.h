@@ -3,6 +3,7 @@
 #include <list>
 #include <string>
 #include <vector>
+#include "CDtaFile.h"
 
 enum eError;
 
@@ -12,7 +13,7 @@ public:
     CArk();
     ~CArk();
 
-    eError ConstructFromDirectory( const char* lpInputDirectory, const CArk& lReferenceHeader );
+    eError ConstructFromDirectory( const char* lpInputDirectory, const CArk& lReferenceHeader, std::vector< SSongConfig > laSongs );
     eError BuildArk( const char* lpInputDirectory );
     eError SaveArk( const char* lpOutputDirectory, const char* lpHeaderFilename ) const;
 

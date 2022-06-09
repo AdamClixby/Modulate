@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string>
 #include <vector>
+#include <cctype>
 #include <algorithm>
 #include <windows.h>
 
@@ -54,8 +55,14 @@ int CArk::GetNumberOfFilesIncludingDuplicates( const std::vector<std::string>& l
     return liNumEntries;
 }
 
-eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& lReferenceHeader )
+eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& lReferenceHeader, std::vector< SSongConfig > laSongs )
 {
+    laSongs.push_back( { "", "", "", "", "/songs/credits", "", -1 } );
+    laSongs.push_back( { "", "", "", "", "/songs/tut0",    "", -1 } );
+    laSongs.push_back( { "", "", "", "", "/songs/tut1",    "", -1 } );
+    laSongs.push_back( { "", "", "", "", "/songs/tut2",    "", -1 } );
+    laSongs.push_back( { "", "", "", "", "/songs/tutc",    "", -1 } );
+
     std::vector<std::string> laFilenames;
     laFilenames.reserve( lReferenceHeader.miNumFiles );
 
@@ -83,9 +90,46 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
 
     sFileDefinition* lpFileDef = mpFiles;
 
+    int liNumFilesIgnored = 0;
     std::vector<std::string>::const_iterator lFilename = laFilenames.begin();
     for( int ii = 0; ii < miNumFiles && lFilename != laFilenames.end(); ++ii, ++lFilename )
     {
+        auto IsValidFile = [ &laSongs ]( const char* lpFilename )
+        {
+            bool lbIsValidFile = true;
+            if( const char* lpSongName = strstr( lpFilename, "/songs/" ) )
+            {
+                lbIsValidFile = false;
+
+                // Check that this song is in the song list
+                static const size_t liSongsPathLength = strlen( "/songs/" );
+
+                const char* lpSongNameEnd = lpSongName + liSongsPathLength;
+                while( *lpSongNameEnd && *lpSongNameEnd != '/' )
+                {
+                    ++lpSongNameEnd;
+                }
+
+                if( *lpSongNameEnd )
+                {
+                    std::string lSongName( lpSongName, lpSongNameEnd - lpSongName );
+                    std::transform( lSongName.begin(), lSongName.end(), lSongName.begin(), []( unsigned char c ) {
+                        return std::tolower( c );
+                    } );
+
+                    for( const SSongConfig& lSong : laSongs )
+                    {
+                        if( strstr( lSong.mPath.c_str(), lSongName.c_str() ) != 0 )
+                        {
+                            lbIsValidFile = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            return lbIsValidFile;
+        };
+
         size_t lFilenameHash = std::hash< std::string >{}( *lFilename );
 
         int jj = 0;
@@ -102,18 +146,25 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
                 continue;
             }
 
-            lpFileDef->mName = *lFilename;
-            fseek( lFile, 0, SEEK_END );
-            int liNewSize = ftell( lFile );
-            //assert( liNewSize == lpFileDef->miSize );
-            lpFileDef->miSize = liNewSize;
-            fclose( lFile );
+            if( IsValidFile( lFilename->c_str() ) )
+            {
+                lpFileDef->mName = *lFilename;
+                fseek( lFile, 0, SEEK_END );
+                int liNewSize = ftell( lFile );
+                //assert( liNewSize == lpFileDef->miSize );
+                lpFileDef->miSize = liNewSize;
+                fclose( lFile );
 
-            lpFileDef->CalculateHashesAndPath();
+                lpFileDef->CalculateHashesAndPath();
 
-            luTotalFileSize += lpFileDef->miSize;
+                luTotalFileSize += lpFileDef->miSize;
 
-            ++lpFileDef;
+                ++lpFileDef;
+            }
+            else
+            {
+                ++liNumFilesIgnored;
+            }
         }
         else
         {
@@ -122,38 +173,37 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
                 *lpFileDef = *lpReferenceFile;
                 lpReferenceFile = lReferenceHeader.GetFile( lFilenameHash, jj++ );
 
-                //if( strstr( lpFileDef->mName.c_str(), "/config/arkbuild/" ) ||
-                //    ( strstr( lpFileDef->mName.c_str(), ".moggsong" ) && !strstr( lpFileDef->mName.c_str(), ".moggsong_dta_" ) ) )
-                //{
-                //    lpFileDef->miSize = 0;
-                //    ++lpFileDef;
-                //    continue;
-                //}
-
-                FILE* lFile = nullptr;
-                std::string lSourceFilename = lpInputDirectory + lpFileDef->mName;
-                fopen_s( &lFile, lSourceFilename.c_str(), "rb" );
-                if( !lFile )
+                if( IsValidFile( lpFileDef->mName.c_str() ) )
                 {
-                    std::cout << "Unable to open file: " << lSourceFilename.c_str() << "\n";
-                    ++lpFileDef;
-                    continue;
+                    FILE* lFile = nullptr;
+                    std::string lSourceFilename = lpInputDirectory + lpFileDef->mName;
+                    fopen_s( &lFile, lSourceFilename.c_str(), "rb" );
+                    if( !lFile )
+                    {
+                        std::cout << "Unable to open file: " << lSourceFilename.c_str() << "\n";
+                        ++lpFileDef;
+                        continue;
+                    }
+
+                    fseek( lFile, 0, SEEK_END );
+                    int liNewSize = ftell( lFile );
+                    //assert( liNewSize == lpFileDef->miSize );
+                    lpFileDef->miSize = liNewSize;
+                    fclose( lFile );
+
+                    luTotalFileSize += lpFileDef->miSize;
                 }
-
-                fseek( lFile, 0, SEEK_END );
-                int liNewSize = ftell( lFile );
-                //assert( liNewSize == lpFileDef->miSize );
-                lpFileDef->miSize = liNewSize;
-                fclose( lFile );
-
-                luTotalFileSize += lpFileDef->miSize;
+                else
+                {
+                    ++liNumFilesIgnored;
+                }
 
                 ++lpFileDef;
             }
         }
     }
 
-    miNumFiles += liNumDuplicates;
+    miNumFiles += liNumDuplicates - liNumFilesIgnored;
 
     miNumArks = lReferenceHeader.miNumArks;
 

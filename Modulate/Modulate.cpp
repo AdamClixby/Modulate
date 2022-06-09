@@ -373,14 +373,30 @@ eError Pack( std::deque< std::string >& laParams )
         lOuptutPath += "/";
     }
 
+    std::string lAmpConfigPath = lInputPath + CSettings::msPlatform + "/config/amp_config.dta_dta_" + CSettings::msPlatform;
+    std::cout << "Loading " << lAmpConfigPath.c_str() << "\n";
+
+    CDtaFile lAmpConfig;
+    eError leError = lAmpConfig.Load( lAmpConfigPath.c_str() );
+    SHOW_ERROR_AND_RETURN;
+
+    std::vector< SSongConfig > lSongs = lAmpConfig.GetSongs();
+    CDtaFile lSongsConfig;
+
+    std::string lAmpSongsConfigPath = lInputPath + CSettings::msPlatform + "/config/amp_songs_config.dta_dta_" + CSettings::msPlatform;
+    leError = lSongsConfig.Load( lAmpSongsConfigPath.c_str() );
+    SHOW_ERROR_AND_RETURN;
+
+    lSongsConfig.GetSongData( lSongs );
+
     CArk lReferenceArkHeader;
     std::string lHeaderFilename = std::string( "main_" ).append( CSettings::msPlatform ).append( ".hdr" );
-    eError leError = lReferenceArkHeader.Load( lHeaderFilename.c_str() );
+    leError = lReferenceArkHeader.Load( lHeaderFilename.c_str() );
     //lReferenceArkHeader.LoadArkData();
     SHOW_ERROR_AND_RETURN;
 
     CArk lArkHeader;
-    leError = lArkHeader.ConstructFromDirectory( lInputPath.c_str(), lReferenceArkHeader );
+    leError = lArkHeader.ConstructFromDirectory( lInputPath.c_str(), lReferenceArkHeader, lSongs );
     SHOW_ERROR_AND_RETURN;
 
     lArkHeader.BuildArk( lInputPath.c_str() );
@@ -595,7 +611,7 @@ eError AddSong( std::deque< std::string >& laParams )
     lNewSong.mName = lMoggFile.GetTitle();
     lNewSong.mUnlockMethod = "play_num";
     lNewSong.mType = "kSongExtra";
-    lNewSong.mPath = "../Songs/" + lSongId + "/" + lSongId + ".moggsong";
+    lNewSong.mPath = "../songs/" + lSongId + "/" + lSongId + ".moggsong";
     lNewSong.miUnlockCount = 0;
     lNewSong.mArena = lMoggFile.GetArenaName();
 
@@ -770,7 +786,7 @@ eError AutoAddAllSongs( std::deque< std::string >& laParams )
         lNewSong.mName = lMoggFile.GetTitle();
         lNewSong.mUnlockMethod = "play_num";
         lNewSong.mType = "kSongExtra";
-        lNewSong.mPath = "../Songs/" + lSongName + "/" + lSongName + ".moggsong";
+        lNewSong.mPath = "../songs/" + lSongName + "/" + lSongName + ".moggsong";
         lNewSong.miUnlockCount = 0;
         lNewSong.mArena = lMoggFile.GetArenaName();
         ToUpper( lNewSong.mId );
