@@ -192,13 +192,12 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
                     fclose( lFile );
 
                     luTotalFileSize += lpFileDef->miSize;
+                    ++lpFileDef;
                 }
                 else
                 {
                     ++liNumFilesIgnored;
                 }
-
-                ++lpFileDef;
             }
         }
     }
