@@ -727,7 +727,7 @@ eError CArk::LoadArkData()
         delete[] mpArkData;
     }
 
-    unsigned int luTotalArkSize = 0;
+    unsigned __int64 luTotalArkSize = 0;
     const sArkDefinition* lpArkDef = mpArks;
     for( int ii = 0; ii < miNumArks; ++ii, ++lpArkDef )
     {
