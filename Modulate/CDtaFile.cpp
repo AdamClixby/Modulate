@@ -1290,6 +1290,9 @@ eError CMoggsong::ProcessMoggSongKey( char*& lpData, __int64 liDataSize )
     READ_FLOAT( "bpm", mfBPM );
 
 #define IGNORE_KEY( lpName ) if( IS_KEY( lpName ) ) { std::string lIgnore; return lReadString( lIgnore ); }
+    
+    IGNORE_KEY( "charter" );
+    IGNORE_KEY( "demo_video" );
 
     std::cout << "Unknown token in file: " << lpData << "\n";
 
