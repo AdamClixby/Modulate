@@ -1,7 +1,8 @@
-﻿// Modulate.cpp : This file contains the 'main' function. Program execution begins and ends there.
+// Modulate.cpp : This file contains the 'main' function. Program execution begins and ends there.
 //
 
 #include "pch.h"
+#include <fstream>
 #include <iostream>
 #include <sys/types.h>
 #include <direct.h>
@@ -108,6 +109,28 @@ eError BuildSingleSong( std::deque< std::string >& laParams, bool lbDoOutput = t
     int liMidiBPM = (int)roundf( 60000000.0f / lDataFile.GetBPM() );
 
     std::string lMidiFilename = lDirectory + CSettings::msPlatform + "/songs/" + lSongName + "/" + lSongName + ".mid_" + CSettings::msPlatform;
+    std::string lDonorPath = lDirectory + CSettings::msPlatform + "/songs/tut0";
+
+#define COPY_DONOR(ext)                                                                                                   \
+    {                                                                                                                     \
+        std::string lDonorFile = lDonorPath + "/tut0." + ext;                                                             \
+        std::string lDestFile = lDirectory + CSettings::msPlatform + "/songs/" + lSongName + "/" + lSongName + "." + ext; \
+        if (FILE *file = fopen(lDestFile.c_str(), "r"))                                                                   \
+        {                                                                                                                 \
+            fclose(file);                                                                                                 \
+        }                                                                                                                 \
+        else                                                                                                              \
+        {                                                                                                                 \
+            std::ifstream src(lDonorFile.c_str(), std::ios::binary);                                                      \
+            std::ofstream dst(lDestFile.c_str(), std::ios::binary);                                                       \
+            dst << src.rdbuf();                                                                                           \
+        }                                                                                                                 \
+    };
+
+    COPY_DONOR("mid_" + CSettings::msPlatform);
+    COPY_DONOR("png.dta_dta_" + CSettings::msPlatform);
+    COPY_DONOR("png_" + CSettings::msPlatform);
+
     FILE* lpMidiFile = nullptr;
     fopen_s( &lpMidiFile, lMidiFilename.c_str(), "rb" );
     if( !lpMidiFile )
