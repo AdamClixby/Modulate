@@ -11,6 +11,7 @@ public:
     static bool mbVerbose;
     static bool mbOverwriteOutputFiles;
     static bool mbIgnoreNewFiles;
+    static bool mbPackAllFiles;
 
     static const unsigned int kuEncryptedVersionPS3 = 0xc64eed30;
     static const unsigned int kuEncryptedVersionPS4 = 0x6f303f55;

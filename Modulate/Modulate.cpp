@@ -60,6 +60,15 @@ eError EnableForceWrite( std::deque< std::string >& )
     return eError_NoError;
 }
 
+eError EnablePackAll(std::deque< std::string >&)
+{
+    CSettings::mbPackAllFiles = true;
+
+    VERBOSE_OUT("Enable packing for all files, even unused songs\n");
+
+    return eError_NoError;
+}
+
 eError BuildSingleSong( std::deque< std::string >& laParams, bool lbDoOutput = true )
 {
     if( lbDoOutput )
@@ -397,21 +406,31 @@ eError Pack( std::deque< std::string >& laParams )
         lOuptutPath += "/";
     }
 
-    std::string lAmpConfigPath = lInputPath + CSettings::msPlatform + "/config/amp_config.dta_dta_" + CSettings::msPlatform;
-    std::cout << "Loading " << lAmpConfigPath.c_str() << "\n";
+    eError leError;
+    std::vector< SSongConfig > lSongs;
 
-    CDtaFile lAmpConfig;
-    eError leError = lAmpConfig.Load( lAmpConfigPath.c_str() );
-    SHOW_ERROR_AND_RETURN;
+    if (CSettings::mbPackAllFiles == true)
+    {
+        lSongs = std::vector< SSongConfig >();
+    }
+    else
+    {
+        std::string lAmpConfigPath = lInputPath + CSettings::msPlatform + "/config/amp_config.dta_dta_" + CSettings::msPlatform;
+        std::cout << "Loading " << lAmpConfigPath.c_str() << "\n";
 
-    std::vector< SSongConfig > lSongs = lAmpConfig.GetSongs();
-    CDtaFile lSongsConfig;
+        CDtaFile lAmpConfig;
+        leError = lAmpConfig.Load( lAmpConfigPath.c_str() );
+        SHOW_ERROR_AND_RETURN;
 
-    std::string lAmpSongsConfigPath = lInputPath + CSettings::msPlatform + "/config/amp_songs_config.dta_dta_" + CSettings::msPlatform;
-    leError = lSongsConfig.Load( lAmpSongsConfigPath.c_str() );
-    SHOW_ERROR_AND_RETURN;
+        lSongs = lAmpConfig.GetSongs();
+        CDtaFile lSongsConfig;
 
-    lSongsConfig.GetSongData( lSongs );
+        std::string lAmpSongsConfigPath = lInputPath + CSettings::msPlatform + "/config/amp_songs_config.dta_dta_" + CSettings::msPlatform;
+        leError = lSongsConfig.Load( lAmpSongsConfigPath.c_str() );
+        SHOW_ERROR_AND_RETURN;
+
+        lSongsConfig.GetSongData( lSongs );
+    }
 
     CArk lReferenceArkHeader;
     std::string lHeaderFilename = std::string( "main_" ).append( CSettings::msPlatform ).append( ".hdr" );
@@ -533,6 +552,7 @@ void PrintUsage()
     std::cout << "Options:\n";
     std::cout << "-verbose\tShow additional information during operation\n";
     std::cout << "-force\t\tOverwrite existing files\n";
+    std::cout << "-packall\t\tPack all files, even unused song files\n";
     std::cout << "\nCommands:\n";
     std::cout << "-unpack <out_dir>\t\t\t\tUnpack the contents of the .ark file(s) to <out_dir>\n";
     std::cout << "-pack <in_dir> <out_dir>\t\t\tRepack data into an .ark file, ignoring new files\n";
@@ -883,6 +903,7 @@ int main( int argc, char *argv[], char *envp[] )
         "-ps3",         PS3,
         "-verbose",     EnableVerbose,
         "-force",       EnableForceWrite,
+        "-packall",     EnablePackAll,
         "-unpack",      Unpack,
         "-replace",     ReplaceSong,
         "-buildsong",   BuildSingleSongCommand,
