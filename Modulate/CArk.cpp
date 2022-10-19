@@ -145,7 +145,7 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
                 continue;
             }
 
-            if( ShouldPackFile( laSongs, lFilename->c_str() ) )
+            if( CSettings::mbPackAllFiles || ShouldPackFile( laSongs, lFilename->c_str() ) )
             {
                 lpFileDef->mName = *lFilename;
                 fseek( lFile, 0, SEEK_END );
@@ -172,7 +172,7 @@ eError CArk::ConstructFromDirectory( const char* lpInputDirectory, const CArk& l
                 *lpFileDef = *lpReferenceFile;
                 lpReferenceFile = lReferenceHeader.GetFile( lFilenameHash, jj++ );
 
-                if( ShouldPackFile( laSongs, lpFileDef->mName.c_str() ) )
+                if( CSettings::mbPackAllFiles || ShouldPackFile( laSongs, lpFileDef->mName.c_str() ) )
                 {
                     FILE* lFile = nullptr;
                     std::string lSourceFilename = lpInputDirectory + lpFileDef->mName;
