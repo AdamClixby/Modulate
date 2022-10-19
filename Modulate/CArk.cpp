@@ -916,6 +916,7 @@ eError CArk::SaveArk( const char* lpOutputDirectory, const char* lpHeaderFilenam
 
         unsigned char* lpHeaderPtr = lacHeaderData + ( 1 * sizeof( unsigned int ) );
         sHeaderBase* lpHeaderBase = (sHeaderBase*)lpHeaderPtr;
+        lpHeaderBase->miNumChecksums = 1;
         lpHeaderBase->muVersion = kuUnencryptedVersion;
         lpHeaderBase->miNumArks = miNumArks;
 
