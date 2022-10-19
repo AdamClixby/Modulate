@@ -26,7 +26,8 @@ public:
 private:
     struct sHeaderBase {
         unsigned int muVersion;
-        char mChecksumData[ 20 ];
+        unsigned int miNumChecksums;
+        char mChecksumData[ 16 ];
         int miNumArks;
     };
     struct sIntList {
